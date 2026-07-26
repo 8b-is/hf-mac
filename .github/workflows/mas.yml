@@ -17,7 +17,10 @@ on:
 
 jobs:
   mas:
-    runs-on: macos-15
+    # Blacksmith macOS runner (Apple Silicon M4). Drop-in for macos-15.
+    # NOTE: the Mac App Store path is cleaner via Xcode Cloud (see APP_STORE.md);
+    # this SwiftPM+productbuild scaffold stays as a self-hosted alternative.
+    runs-on: blacksmith-6vcpu-macos-15
     steps:
       - uses: actions/checkout@v4
 

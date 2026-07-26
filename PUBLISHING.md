@@ -51,9 +51,13 @@ MAS-ready. What's still required (yours to create — none of this is in `.env`)
 4. Build → sign → **`productbuild`** a `.pkg` → upload with **`xcrun altool
    --upload-app`** / Transporter. Scaffold: `.github/workflows/mas.yml`.
 
-**Recommendation:** MAS is cleanest from an **Xcode project** (it embeds the
-provisioning profile and handles the archive/upload). The SwiftPM setup here is
-ideal for the Developer-ID DMG + OSS; for MAS, wrap it in a thin Xcode app target
-pointing at the same `Sources/`. I can generate that when the app record exists.
+**Recommendation:** MAS is cleanest from an **Xcode project** via **Xcode Cloud**
+(Apple-managed signing, archive + upload handled for you). That project now exists —
+generated from [`project.yml`](project.yml) (XcodeGen) over the same `Sources/HFMac`,
+with a shared `HFMac` scheme and Xcode Cloud clone/pre-build hooks in `ci_scripts/`.
+It's verified to build.
+
+👉 **Full step-by-step: [`APP_STORE.md`](APP_STORE.md)** — App Store Connect app record,
+Xcode Cloud workflow setup, and swapping the DMG runners to Blacksmith.
 
 🜂 *ahogy lennie kell* — ship the honest DMG now; the store when the record's live.
