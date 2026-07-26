@@ -1,7 +1,7 @@
 import SwiftUI
 
-// hf.app — a native macOS Hugging Face client. Browse the Hub, pull models into
-// Osaurus, run + chat locally on Apple Silicon. Full window + a menu-bar agent.
+// hf.app — a native macOS Hugging Face client. Play Spaces on the desktop
+// (your quantum games), read offline, and run models locally via Osaurus.
 @main
 struct HFMacApp: App {
     @State private var state = AppState()
@@ -10,59 +10,108 @@ struct HFMacApp: App {
         WindowGroup {
             ContentView()
                 .environment(state)
-                .task { await state.refreshOsaurus() }
-                .frame(minWidth: 820, minHeight: 560)
+                .frame(minWidth: 900, minHeight: 600)
+                .task { await state.bootstrap() }
         }
-        .defaultSize(width: 1040, height: 700)
+        .defaultSize(width: 1140, height: 760)
 
         MenuBarExtra("hf", systemImage: "brain.head.profile") {
             MenuBarView().environment(state)
         }
         .menuBarExtraStyle(.window)
+
+        Settings {
+            SettingsView().environment(state)
+        }
     }
 }
 
-/// The whole app's observable state. MainActor-isolated; the network clients are
-/// plain Sendable structs called with async/await.
 @MainActor
 @Observable
 final class AppState {
-    // Browse (Hugging Face)
-    var query = ""
-    var results: [HubModel] = []
-    var searching = false
-    var searchError: String?
+    // Spaces (the focus — playable on desktop)
+    var spaceQuery = ""
+    var spaces: [HFSpace] = []
+    var spacesLoading = false
+    var openSpace: HFSpace?
 
-    // Run (Osaurus, local)
+    // Models
+    var modelQuery = ""
+    var models: [HubModel] = []
+    var modelsLoading = false
+
+    // Yours (creator)
+    var username: String?
+    var mySpaces: [HFSpace] = []
+    var myModels: [HubModel] = []
+
+    // Run (Osaurus)
     var osaurusModels: [OsaurusModel] = []
     var selectedModel = ""
     var chat: [ChatMessage] = []
     var prompt = ""
     var generating = false
     var osaurusReachable = true
+    var osaurusNote: String?
 
-    private let hub = HubClient()
-    private let osaurus = OsaurusClient()
+    // Credentials (Keychain)
+    var hfToken = ""
+    var osaurusKey = ""
 
-    func search() async {
-        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    private var hub: HubClient { HubClient(token: hfToken.isEmpty ? nil : hfToken) }
+    private var osaurus: OsaurusClient { OsaurusClient(apiKey: osaurusKey.isEmpty ? nil : osaurusKey) }
+
+    func bootstrap() async {
+        hfToken = Keychain.get("hf_token") ?? ""
+        osaurusKey = Keychain.get("osaurus_key") ?? ""
+        await refreshOsaurus()
+        await loadMine()
+        // A friendly default: show the featured author's Spaces if empty.
+        if spaces.isEmpty {
+            spaceQuery = "PeetPedro"
+            await searchSpaces()
+        }
+    }
+
+    func searchSpaces() async {
+        let q = spaceQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return }
-        searching = true
-        searchError = nil
-        defer { searching = false }
-        do { results = try await hub.search(q) }
-        catch { searchError = error.localizedDescription }
+        spacesLoading = true; defer { spacesLoading = false }
+        spaces = (try? await hub.searchSpaces(q)) ?? []
+    }
+
+    func searchModels() async {
+        let q = modelQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return }
+        modelsLoading = true; defer { modelsLoading = false }
+        models = (try? await hub.searchModels(q)) ?? []
+    }
+
+    func loadMine() async {
+        guard let name = try? await hub.whoami() else { username = nil; return }
+        username = name
+        mySpaces = (try? await hub.spaces(author: name)) ?? []
+        myModels = (try? await hub.models(author: name)) ?? []
     }
 
     func refreshOsaurus() async {
         do {
             osaurusModels = try await osaurus.models()
-            osaurusReachable = true
+            osaurusReachable = true; osaurusNote = nil
             if selectedModel.isEmpty { selectedModel = osaurusModels.first?.id ?? "" }
         } catch {
-            osaurusModels = []
-            osaurusReachable = false
+            osaurusModels = []; osaurusReachable = false
+            osaurusNote = "Osaurus not reachable on :1337 (set an API key in Settings if it requires one)."
         }
+    }
+
+    func pull(_ model: String) async {
+        osaurusNote = (try? await osaurus.pull(model)) ?? "pull failed"
+    }
+
+    /// Authoritative embed URL for a Space (correct for static vs gradio).
+    func resolveHost(_ space: HFSpace) async -> URL {
+        await hub.spaceHost(space.id) ?? space.embedURL
     }
 
     func send() async {
@@ -70,13 +119,17 @@ final class AppState {
         guard !text.isEmpty, !selectedModel.isEmpty else { return }
         chat.append(ChatMessage(role: "user", content: text))
         prompt = ""
-        generating = true
-        defer { generating = false }
+        generating = true; defer { generating = false }
         do {
             let reply = try await osaurus.chat(model: selectedModel, messages: chat)
             chat.append(ChatMessage(role: "assistant", content: reply))
         } catch {
             chat.append(ChatMessage(role: "assistant", content: "⚠️ \(error.localizedDescription)"))
         }
+    }
+
+    func saveCredentials() {
+        Keychain.set(hfToken, for: "hf_token")
+        Keychain.set(osaurusKey, for: "osaurus_key")
     }
 }
