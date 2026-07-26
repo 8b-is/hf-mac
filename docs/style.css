@@ -472,7 +472,7 @@ p {
   color: #000;
 }
 
-/* Footer */
+/* Footer (Vaked Constellation Style) */
 footer {
   padding: 60px 0 40px;
   border-top: 1px solid var(--border-color);
@@ -490,16 +490,49 @@ footer {
 
 .footer-links {
   display: flex;
-  gap: 24px;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .footer-links a {
   color: var(--text-muted);
   text-decoration: none;
+  transition: var(--transition);
 }
 
 .footer-links a:hover {
   color: var(--hf-yellow);
+}
+
+/* Constellation Footer Links */
+.constellation {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.9;
+  word-break: break-word;
+  text-align: center;
+}
+
+.constellation b {
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.constellation a {
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.constellation a:hover {
+  color: var(--hf-yellow);
+}
+
+.constellation .sep {
+  opacity: 0.55;
 }
 
 /* Responsive */
