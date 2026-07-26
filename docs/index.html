@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>hf.app — Native macOS Hugging Face Client on Apple Silicon</title>
   <meta name="description" content="Browse the Hugging Face Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent on macOS. Honest by design.">
-  <meta name="keywords" content="Hugging Face, macOS, Apple Silicon, M1, M2, M3, M4, Osaurus, local LLM, MLX, open-weight models, Swift, SwiftUI, on-device AI, privacy">
+  <meta name="keywords" content="Hugging Face, macOS, Apple Silicon, M1, M2, M3, M4, Osaurus, local LLM, MLX, open-weight models, Swift, SwiftUI, on-device AI, privacy, MoE, Mixture of Experts">
   <meta name="author" content="8b-is / vaked constellation">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#090d16">
@@ -39,8 +39,8 @@
     "operatingSystem": "macOS 14.0+",
     "applicationCategory": "DeveloperApplication",
     "description": "Native macOS Hugging Face client on Apple Silicon. Browse the Hub, play Spaces, and run models locally via Osaurus.",
-    "downloadUrl": "https://github.com/8b-is/hf-mac/releases/tag/v0.2.0",
-    "softwareVersion": "0.2.0",
+    "downloadUrl": "https://github.com/8b-is/hf-mac/releases/tag/v0.3.0",
+    "softwareVersion": "0.3.0",
     "author": {
       "@type": "Organization",
       "name": "8b-is / vaked constellation",
@@ -100,7 +100,7 @@
         </a>
       </div>
       <p class="hero-meta">
-        <a href="https://github.com/8b-is/hf-mac/releases/download/v0.2.0/hf-mac-v0.2.0.dmg"><strong>v0.2.0</strong></a>
+        <a href="https://github.com/8b-is/hf-mac/releases/download/v0.3.0/hf-mac-v0.3.0.dmg"><strong>v0.3.0</strong></a>
         · notarized &amp; stapled · Apple Silicon (arm64) · macOS 14 Sonoma+
       </p>
 
@@ -137,6 +137,12 @@
             <h3>Dual Window & Agent UI</h3>
             <p>Work from a full workspace window or summon the quick prompt agent anytime directly from your macOS Menu Bar.</p>
           </div>
+
+          <div class="card">
+            <div class="card-icon">🧠</div>
+            <h3>MoE Optimizer Layer</h3>
+            <p>Intent classification (Code, Math, Summary, Creative) that dynamically routes prompts to specialized local models with expert system prompts.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -172,6 +178,7 @@
             Browse models on Hugging Face Hub → pull into Osaurus → chat locally using standard OpenAI-compatible `/v1` endpoints.
           </p>
           <ul class="showcase-list">
+            <li><span>✓</span> <strong>MoEOptimizer.swift:</strong> Intent Classifier & Model Router</li>
             <li><span>✓</span> <strong>Services.swift:</strong> HubClient & OsaurusClient APIs</li>
             <li><span>✓</span> <strong>HFMacApp.swift:</strong> MainActor Observable AppState</li>
             <li><span>✓</span> <strong>Views.swift:</strong> SwiftUI WindowGroup + MenuBarExtra</li>
@@ -223,7 +230,7 @@
         <!-- Tab 1: Quick Start -->
         <div class="tab-content active" id="tab-quickstart">
           <h3>Install in under a minute</h3>
-          <p><strong>1 · Get the app.</strong> Download the <a href="https://github.com/8b-is/hf-mac/releases/latest" target="_blank" rel="noopener" style="color: var(--hf-yellow);">latest&nbsp;.dmg (v0.2.0)</a>, open it, and drag <strong>hf.app</strong> into Applications. It's Developer-ID signed &amp; notarized, so it opens with no Gatekeeper warning — no <code>xattr</code> dance.</p>
+          <p><strong>1 · Get the app.</strong> Download the <a href="https://github.com/8b-is/hf-mac/releases/latest" target="_blank" rel="noopener" style="color: var(--hf-yellow);">latest&nbsp;.dmg (v0.3.0)</a>, open it, and drag <strong>hf.app</strong> into Applications. It's Developer-ID signed &amp; notarized, so it opens with no Gatekeeper warning — no <code>xattr</code> dance.</p>
           <p><strong>2 · Get the engine.</strong> Install <a href="https://github.com/osaurus-ai/osaurus" target="_blank" rel="noopener" style="color: var(--hf-yellow);">Osaurus</a> and start it on <code>localhost:1337</code>. hf.app is the thin front-end; Osaurus owns the weights, MLX, and serving.</p>
           <p><strong>3 · Pull &amp; run.</strong> Pull a model in Osaurus (Llama, Qwen, Phi…), then hit <strong>Refresh</strong> in the <em>Run</em> tab of hf.app. Real tokens/sec, fully on-device — your HF token stays in the macOS Keychain.</p>
 
@@ -243,15 +250,20 @@ swift run</code>
         <!-- Tab 2: Codebase Architecture -->
         <div class="tab-content" id="tab-architecture">
           <h3>Swift codebase — <code>Sources/HFMac/</code></h3>
-          <p>Seven single-responsibility files, ~1,100 lines total. hf.app drives <a href="https://github.com/osaurus-ai/osaurus" target="_blank" rel="noopener" style="color: var(--hf-yellow);">Osaurus</a> for inference and embeds live Spaces — it never bundles weights or a model runtime. Read by layer:</p>
+          <p>Eight single-responsibility files, ~1,200 lines total. hf.app drives <a href="https://github.com/osaurus-ai/osaurus" target="_blank" rel="noopener" style="color: var(--hf-yellow);">Osaurus</a> for inference and embeds live Spaces — it never bundles weights or a model runtime. Read by layer:</p>
 
           <div class="arch-map">
             <div class="arch-group">
-              <div class="arch-group-label">Entry</div>
+              <div class="arch-group-label">Entry &amp; Router</div>
               <div class="arch-row">
                 <span class="arch-file">HFMacApp.swift</span>
                 <span class="arch-role"><code>@main</code> App — <code>WindowGroup</code> + <code>MenuBarExtra</code>, holding the <code>@Observable</code> <code>AppState</code> the whole UI reads.</span>
                 <span class="arch-loc">186 loc</span>
+              </div>
+              <div class="arch-row">
+                <span class="arch-file">MoEOptimizer.swift</span>
+                <span class="arch-role">Mixture of Experts layer — prompt intent classifier (`ExpertDomain`) and intelligent local model auto-router.</span>
+                <span class="arch-loc">90 loc</span>
               </div>
             </div>
 
@@ -265,7 +277,7 @@ swift run</code>
               <div class="arch-row">
                 <span class="arch-file">OfflineStore.swift</span>
                 <span class="arch-role">Offline content on disk — full static-Space snapshots (playable with no network) and cached article HTML, under Application Support.</span>
-                <span class="arch-loc">41 loc</span>
+                <span class="arch-loc">50 loc</span>
               </div>
               <div class="arch-row">
                 <span class="arch-file">Keychain.swift</span>
@@ -279,12 +291,12 @@ swift run</code>
               <div class="arch-row">
                 <span class="arch-file">Views.swift</span>
                 <span class="arch-role">The five tabs — <strong>Spaces</strong>, <strong>Articles</strong>, <strong>Models</strong>, <strong>Run</strong>, <strong>Yours</strong> — plus the menu-bar agent and settings.</span>
-                <span class="arch-loc">506 loc</span>
+                <span class="arch-loc">520 loc</span>
               </div>
               <div class="arch-row">
                 <span class="arch-file">WebView.swift</span>
                 <span class="arch-role"><code>SpaceWebView</code> — embeds a live Hugging Face Space (<code>*.hf.space</code>) so quantum games, Gradio, and static apps run on the desktop; caches visited assets.</span>
-                <span class="arch-loc">39 loc</span>
+                <span class="arch-loc">40 loc</span>
               </div>
               <div class="arch-row">
                 <span class="arch-file">Theme.swift</span>
@@ -345,7 +357,7 @@ open HFMac.xcodeproj       # ⌘R to run · Product ▸ Archive to package</code
               <span>RELEASE — TAG TO SHIP</span>
               <button class="copy-btn">Copy</button>
             </div>
-            <code>git tag v0.2.0
+            <code>git tag v0.3.0
 git push --tags      # → notarized .dmg on Releases</code>
           </div>
 
