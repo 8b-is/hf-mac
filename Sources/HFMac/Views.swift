@@ -63,6 +63,15 @@ struct ContentView: View {
             }
             .toolbarBackground(Theme.glassBarMaterial, for: .windowToolbar)
         }
+        // ⌘1–⌘5 tab navigation (native macOS convention)
+        .background {
+            ForEach(Array(Tab.allCases.enumerated()), id: \.offset) { i, t in
+                Button("") { tab = t }
+                    .keyboardShortcut(KeyEquivalent(Character("\(i + 1)")), modifiers: .command)
+                    .opacity(0)
+                    .accessibilityHidden(true)
+            }
+        }
     }
 }
 
