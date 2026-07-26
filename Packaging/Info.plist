@@ -13,7 +13,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.4.0</string>
+	<string>0.5.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>LSMinimumSystemVersion</key>
@@ -24,5 +24,9 @@
 	<string>public.app-category.developer-tools</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Peter Lodri · MIT</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>hf.app uses the microphone to dictate prompts to your local model — on-device, never uploaded.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>hf.app transcribes your voice on-device to type prompts. Audio stays on your Mac.</string>
 </dict>
 </plist>

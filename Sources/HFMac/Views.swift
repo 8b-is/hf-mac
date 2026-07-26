@@ -441,11 +441,35 @@ struct RunView: View {
             }
             Divider()
 
+            if let vn = state.voice.note {
+                HStack { Text(vn).font(.caption).foregroundStyle(Theme.warn); Spacer() }
+                    .padding(.horizontal, 16).padding(.bottom, 4).background(Theme.glassBarMaterial)
+            }
             HStack(alignment: .bottom, spacing: 10) {
+                // Voice · preview — dictate a prompt on-device
+                Button { state.voice.toggleDictation() } label: {
+                    Image(systemName: state.voice.isDictating ? "mic.fill" : "mic")
+                        .foregroundStyle(state.voice.isDictating ? Theme.warn : Theme.dim)
+                }
+                .buttonStyle(.bordered)
+                .help(state.voice.isDictating ? "Stop dictation" : "Dictate a prompt (on-device)")
+
                 TextField("Message the model…", text: $s.prompt, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(1...6)
                     .onSubmit { Task { await state.send() } }
+
+                // Voice · preview — speak replies aloud
+                Button {
+                    state.voice.speakReplies.toggle()
+                    if !state.voice.speakReplies { state.voice.stopSpeaking() }
+                } label: {
+                    Image(systemName: state.voice.speakReplies ? "speaker.wave.2.fill" : "speaker.slash")
+                        .foregroundStyle(state.voice.speakReplies ? Theme.green : Theme.dim)
+                }
+                .buttonStyle(.bordered)
+                .help(state.voice.speakReplies ? "Speaking replies aloud — click to mute" : "Speak replies aloud")
+
                 Button {
                     Task { await state.send() }
                 } label: {
@@ -458,6 +482,9 @@ struct RunView: View {
             }
             .padding(14)
             .background(Theme.glassBarMaterial)
+            .onChange(of: state.voice.transcript) { _, t in
+                if !t.isEmpty { s.prompt = t }
+            }
         }
     }
 }

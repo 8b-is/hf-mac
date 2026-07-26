@@ -67,6 +67,9 @@ final class AppState {
     var memory = EntheaiMemory()
     var lastRecallCount = 0
 
+    // Voice — preview engine (on-device Apple-native speech; ROADMAP: liquid-rust/kokoro sidecars)
+    let voice = VoiceEngine()
+
     // Credentials (Keychain)
     var hfToken = ""
     var osaurusKey = ""
@@ -201,6 +204,7 @@ final class AppState {
             fullMessages.append(ChatMessage(role: "user", content: text))
             let reply = try await osaurus.chat(model: selectedModel, messages: fullMessages)
             chat.append(ChatMessage(role: "assistant", content: reply))
+            voice.speak(reply)   // spoken aloud when the speaker toggle is on
             // Keep the past raw — record the exchange for future recall.
             if memoryEnabled {
                 memory.record(kind: "user", text: text)
