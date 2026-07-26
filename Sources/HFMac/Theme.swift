@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The pocoo.vaked.dev palette — near-black blue ground, cyan accent, mono type.
-/// One family across the ecosystem.
+/// The pocoo.vaked.dev palette — near-black blue ground, cyan accent, mono type,
+/// enhanced with native macOS glass materials and liquid vibrancy.
 enum Theme {
     static let bg      = Color(hex: 0x070B16)
     static let surface = Color(hex: 0x0A0A14)
@@ -12,6 +12,13 @@ enum Theme {
     static let dim     = Color(hex: 0x6878A0)
     static let border  = Color(hex: 0x26304A)
     static let warn    = Color(hex: 0xFFB020)
+
+    // MARK: - Native macOS Glass Materials
+    static let glassMaterial: Material = .ultraThinMaterial
+    static let glassBarMaterial: Material = .thinMaterial
+    static let glassBorder = Color.white.opacity(0.12)
+    static let glassBorderHighlight = Color(hex: 0x00D4FF).opacity(0.35)
+    static let glassGlow = Color(hex: 0x00D4FF).opacity(0.15)
 
     /// Uppercase mono micro-label, pocoo style.
     static func eyebrow(_ s: String) -> some View {

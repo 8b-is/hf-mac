@@ -2,9 +2,8 @@ import SwiftUI
 import WebKit
 
 /// Embeds a live Hugging Face Space (its `*.hf.space` app) so it runs on the
-/// desktop — your quantum games, Gradio demos, static apps. Uses the persistent
-/// data store so visited assets are cached (offline-friendlier for static Spaces;
-/// a full "download for offline" pass comes later).
+/// desktop — your quantum games, Gradio demos, static apps. Blends with native
+/// macOS glass transparency and caches visited assets.
 struct SpaceWebView: NSViewRepresentable {
     let url: URL
 
@@ -15,6 +14,7 @@ struct SpaceWebView: NSViewRepresentable {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
         let wv = WKWebView(frame: .zero, configuration: config)
+        wv.setValue(false, forKey: "drawsBackground")
         wv.allowsBackForwardNavigationGestures = true
         load(url, in: wv)
         context.coordinator.loaded = url

@@ -1,5 +1,35 @@
 import Foundation
 
+// MARK: - Errors
+
+enum HubError: LocalizedError, Sendable {
+    case invalidURL
+    case networkError(HTTPURLResponse)
+    case decodeError(Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL: "Invalid Hugging Face API URL."
+        case .networkError(let resp): "Hugging Face API error (HTTP \(resp.statusCode))."
+        case .decodeError(let err): "Failed to parse Hugging Face data: \(err.localizedDescription)"
+        }
+    }
+}
+
+enum OsaurusError: LocalizedError, Sendable {
+    case unreachable(String)
+    case httpError(Int)
+    case invalidResponse
+
+    var errorDescription: String? {
+        switch self {
+        case .unreachable(let msg): "Osaurus engine unreachable: \(msg)"
+        case .httpError(let code): "Osaurus HTTP \(code) error."
+        case .invalidResponse: "Invalid response from local model server."
+        }
+    }
+}
+
 // MARK: - Hugging Face Hub (models + spaces)
 
 struct HubModel: Identifiable, Decodable, Hashable, Sendable {

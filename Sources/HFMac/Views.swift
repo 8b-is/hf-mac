@@ -26,10 +26,14 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             List(Tab.allCases, selection: $tab) { t in
-                Label(t.rawValue, systemImage: t.icon).tag(t)
+                Label(t.rawValue, systemImage: t.icon)
+                    .tag(t)
+                    .padding(.vertical, 2)
             }
+            .listStyle(.sidebar)
             .navigationTitle("hf.app")
-            .navigationSplitViewColumnWidth(min: 160, ideal: 180)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+            .background(Theme.glassMaterial)
             .safeAreaInset(edge: .bottom) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
@@ -42,16 +46,22 @@ struct ContentView: View {
                         .font(.system(size: 9, weight: .semibold, design: .monospaced))
                         .foregroundStyle(Theme.dim.opacity(0.7))
                 }
+                .padding(12)
+                .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.glassBorder))
                 .padding(10)
             }
         } detail: {
-            switch tab {
-            case .spaces: SpacesView()
-            case .articles: ArticlesView()
-            case .models: ModelsView()
-            case .run: RunView()
-            case .yours: YoursView()
+            Group {
+                switch tab {
+                case .spaces: SpacesView()
+                case .articles: ArticlesView()
+                case .models: ModelsView()
+                case .run: RunView()
+                case .yours: YoursView()
+                }
             }
+            .toolbarBackground(Theme.glassBarMaterial, for: .windowToolbar)
         }
     }
 }
@@ -60,19 +70,23 @@ struct ContentView: View {
 
 struct SpacesView: View {
     @Environment(AppState.self) private var state
-    private let cols = [GridItem(.adaptive(minimum: 200), spacing: 14)]
+    private let cols = [GridItem(.adaptive(minimum: 220), spacing: 16)]
 
     var body: some View {
         @Bindable var s = state
         NavigationStack {
             ScrollView {
-                if state.spacesLoading { ProgressView().padding() }
-                LazyVGrid(columns: cols, spacing: 14) {
+                if state.spacesLoading {
+                    ProgressView("Searching Hugging Face Spaces…")
+                        .padding(40)
+                }
+                LazyVGrid(columns: cols, spacing: 16) {
                     ForEach(state.spaces) { space in
                         NavigationLink(value: space) { SpaceCard(space: space) }
                             .buttonStyle(.plain)
                     }
-                }.padding()
+                }
+                .padding(20)
             }
             .navigationDestination(for: HFSpace.self) { SpacePlayerView(space: $0) }
             .navigationTitle("Spaces")
@@ -80,8 +94,17 @@ struct SpacesView: View {
             .onSubmit(of: .search) { Task { await state.searchSpaces() } }
             .overlay {
                 if state.spaces.isEmpty && !state.spacesLoading {
-                    ContentUnavailableView("Play a Space", systemImage: "gamecontroller",
-                        description: Text("Search the Hub — Gradio demos, static apps, and your quantum games run right here on the desktop."))
+                    ContentUnavailableView {
+                        Label("Play a Space", systemImage: "gamecontroller")
+                    } description: {
+                        Text("Search Hugging Face Hub — Gradio demos, static apps, and quantum games run directly on macOS glass desktop.")
+                    } actions: {
+                        Button("Explore Featured") {
+                            state.spaceQuery = "PeetPedro"
+                            Task { await state.searchSpaces() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 }
             }
         }
@@ -91,26 +114,37 @@ struct SpacesView: View {
 struct SpaceCard: View {
     let space: HFSpace
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
-                Text(space.emoji ?? "🚀").font(.system(size: 28))
+                Text(space.emoji ?? "🚀").font(.system(size: 32))
                 Spacer()
                 if OfflineStore.isSpaceDownloaded(space.id) {
-                    Image(systemName: "checkmark.icloud.fill").font(.caption).foregroundStyle(Theme.green)
+                    Image(systemName: "checkmark.icloud.fill")
+                        .font(.caption)
+                        .foregroundStyle(Theme.green)
+                        .help("Downloaded for offline play")
                 }
             }
-            Text(space.name).font(.system(.headline, design: .monospaced)).foregroundStyle(Theme.fg).lineLimit(1)
-            Text(space.owner).font(.system(.caption, design: .monospaced)).foregroundStyle(Theme.dim)
+            Text(space.name)
+                .font(.system(.headline, design: .monospaced))
+                .foregroundStyle(Theme.fg)
+                .lineLimit(1)
+            Text(space.owner)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(Theme.dim)
             Spacer(minLength: 0)
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 if let sdk = space.sdk { Label(sdk, systemImage: "square.stack.3d.up") }
                 if let l = space.likes { Label(l.formatted(), systemImage: "heart") }
-            }.font(.system(.caption2, design: .monospaced)).foregroundStyle(Theme.dim)
+            }
+            .font(.system(.caption2, design: .monospaced))
+            .foregroundStyle(Theme.dim)
         }
-        .frame(maxWidth: .infinity, minHeight: 128, alignment: .topLeading)
-        .padding(14)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.border))
+        .frame(maxWidth: .infinity, minHeight: 136, alignment: .topLeading)
+        .padding(16)
+        .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.glassBorder))
+        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -133,7 +167,7 @@ struct SpacePlayerView: View {
                 if state.downloadingSpace == space.id {
                     ProgressView().controlSize(.small)
                 } else if OfflineStore.isSpaceDownloaded(space.id) {
-                    Image(systemName: "checkmark.icloud").foregroundStyle(.green).help("Available offline")
+                    Image(systemName: "checkmark.icloud").foregroundStyle(Theme.green).help("Available offline")
                 } else {
                     Button {
                         Task { await state.downloadSpaceOffline(space); url = await state.resolveHost(space) }
@@ -159,19 +193,20 @@ struct ArticlesView: View {
         NavigationStack {
             List(state.articles) { a in
                 NavigationLink(value: a) {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text(a.title).font(.headline)
                             if state.articleIsCached(a) {
-                                Image(systemName: "checkmark.icloud").font(.caption).foregroundStyle(.green)
+                                Image(systemName: "checkmark.icloud").font(.caption).foregroundStyle(Theme.green)
                             }
                         }
                         if !a.summary.isEmpty { Text(a.summary).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
                         Text(a.source).font(.caption2).foregroundStyle(.tertiary)
-                    }.padding(.vertical, 2)
+                    }.padding(.vertical, 4)
                 }
                 .swipeActions { Button("Save") { Task { await state.cacheArticle(a) } } }
             }
+            .listStyle(.inset)
             .navigationDestination(for: Article.self) { ArticleReaderView(article: $0) }
             .navigationTitle("Articles")
             .overlay {
@@ -212,9 +247,9 @@ struct ModelsView: View {
         @Bindable var s = state
         List(state.models) { m in
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(m.id).font(.headline)
-                    HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(m.id).font(.system(.headline, design: .monospaced))
+                    HStack(spacing: 14) {
                         if let t = m.pipeline_tag { Label(t, systemImage: "tag") }
                         if let d = m.downloads { Label(d.formatted(), systemImage: "arrow.down.circle") }
                         if let l = m.likes { Label(l.formatted(), systemImage: "heart") }
@@ -226,10 +261,11 @@ struct ModelsView: View {
                 } else {
                     Button("Pull") { Task { await state.pull(m.id) } }
                         .buttonStyle(.borderedProminent)
+                        .tint(Theme.accent)
                         .controlSize(.small)
                 }
             }
-            .padding(.vertical, 2)
+            .padding(.vertical, 6)
             .contextMenu {
                 Button("Copy Model ID") {
                     NSPasteboard.general.clearContents()
@@ -240,9 +276,32 @@ struct ModelsView: View {
                 Link("Open on huggingface.co", destination: URL(string: "https://huggingface.co/\(m.id)")!)
             }
         }
-        .searchable(text: $s.modelQuery, prompt: "Search models")
+        .listStyle(.inset)
+        .searchable(text: $s.modelQuery, prompt: "Search models (e.g., Llama, Qwen, Mistral)")
         .onSubmit(of: .search) { Task { await state.searchModels() } }
-        .overlay { if state.models.isEmpty { ContentUnavailableView("Find a model", systemImage: "cube.box", description: Text("Search, then pull into Osaurus to run it locally.")) } }
+        .overlay { if state.models.isEmpty { ContentUnavailableView("Find a model", systemImage: "cube.box", description: Text("Search open-weight models, then pull into Osaurus to run locally on Apple Silicon.")) } }
+    }
+}
+
+// MARK: - Chat Bubble Component
+
+struct ChatBubbleView: View {
+    let message: ChatMessage
+
+    var body: some View {
+        let isUser = message.role == "user"
+        let bg = isUser ? Theme.accent.opacity(0.18) : Color.gray.opacity(0.15)
+        let border = isUser ? Theme.glassBorderHighlight : Theme.glassBorder
+
+        HStack {
+            if isUser { Spacer(minLength: 60) }
+            Text(message.content)
+                .textSelection(.enabled)
+                .padding(12)
+                .background(bg, in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(border))
+            if !isUser { Spacer(minLength: 60) }
+        }
     }
 }
 
@@ -253,12 +312,15 @@ struct RunView: View {
     var body: some View {
         @Bindable var s = state
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Text("Local model")
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundStyle(Theme.dim)
                 Picker("", selection: $s.selectedModel) { ForEach(state.osaurusModels) { Text($0.id).tag($0.id) } }
-                    .labelsHidden().frame(maxWidth: 260)
+                    .labelsHidden().frame(maxWidth: 280)
                 Button { Task { await state.refreshOsaurus() } } label: { Image(systemName: "arrow.clockwise") }
-                    .help("Refresh local Osaurus models")
+                    .help("Refresh local Osaurus models (⌘R)")
+                    .keyboardShortcut("r", modifiers: [.command])
                 
                 if !state.chat.isEmpty {
                     Button { state.clearChat() } label: { Image(systemName: "trash") }
@@ -271,61 +333,76 @@ struct RunView: View {
                 if !state.osaurusReachable {
                     Button("Retry Connection") { Task { await state.refreshOsaurus() } }
                         .buttonStyle(.bordered)
+                        .tint(Theme.warn)
                         .controlSize(.small)
                 } else {
-                    HStack(spacing: 4) {
-                        Circle().fill(Theme.green).frame(width: 6, height: 6)
+                    HStack(spacing: 6) {
+                        Circle().fill(Theme.green).frame(width: 7, height: 7)
                         Text("on-device · Osaurus").font(.caption).foregroundStyle(.secondary)
                     }
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .background(Theme.glassMaterial, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.glassBorder))
                 }
-            }.padding()
+            }
+            .padding(14)
+            .background(Theme.glassBarMaterial)
 
             if let n = state.osaurusNote {
                 HStack {
-                    Text(n).font(.caption).foregroundStyle(.orange)
+                    Text(n).font(.caption).foregroundStyle(Theme.warn)
                     Spacer()
-                }.padding(.horizontal).padding(.bottom, 6)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+                .background(Theme.glassBarMaterial)
             }
             Divider()
 
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 10) {
+                    LazyVStack(alignment: .leading, spacing: 12) {
                         ForEach(state.chat) { m in
-                            HStack {
-                                if m.role == "user" { Spacer(minLength: 60) }
-                                Text(m.content).textSelection(.enabled).padding(10)
-                                    .background(m.role == "user" ? Color.accentColor.opacity(0.18) : Color.gray.opacity(0.14),
-                                                in: RoundedRectangle(cornerRadius: 12))
-                                if m.role != "user" { Spacer(minLength: 60) }
-                            }
-                            .id(m.id)
+                            ChatBubbleView(message: m)
+                                .id(m.id)
                         }
                         if state.generating {
-                            HStack {
+                            HStack(spacing: 8) {
                                 ProgressView().controlSize(.small)
                                 Text("thinking…").font(.caption).foregroundStyle(.secondary)
-                            }.id("thinking_indicator")
+                            }
+                            .padding(10)
+                            .background(Theme.glassMaterial, in: Capsule())
+                            .id("thinking_indicator")
                         }
-                    }.padding()
+                    }
+                    .padding(16)
                 }
                 .onChange(of: state.chat.count) { _, _ in
                     if let lastId = state.chat.last?.id {
-                        withAnimation { proxy.scrollTo(lastId, anchor: .bottom) }
+                        withAnimation(.easeInOut) { proxy.scrollTo(lastId, anchor: .bottom) }
                     }
                 }
             }
             Divider()
 
-            HStack(alignment: .bottom) {
+            HStack(alignment: .bottom, spacing: 10) {
                 TextField("Message the model…", text: $s.prompt, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
-                    .lineLimit(1...5)
+                    .lineLimit(1...6)
                     .onSubmit { Task { await state.send() } }
-                Button("Send") { Task { await state.send() } }
-                    .disabled(state.generating || state.selectedModel.isEmpty)
-                    .keyboardShortcut(.return, modifiers: [.command])
-            }.padding()
+                Button {
+                    Task { await state.send() }
+                } label: {
+                    Label("Send", systemImage: "paperplane.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.accent)
+                .disabled(state.generating || state.selectedModel.isEmpty)
+                .keyboardShortcut(.return, modifiers: [.command])
+            }
+            .padding(14)
+            .background(Theme.glassBarMaterial)
         }
     }
 }
@@ -356,6 +433,7 @@ struct YoursView: View {
                     }
                 }
             }
+            .listStyle(.inset)
         }
     }
 }
@@ -369,7 +447,7 @@ struct SettingsView: View {
         Form {
             Section("Hugging Face") {
                 SecureField("Token (hf_…)", text: $s.hfToken)
-                Text("Read access. Stored in your Keychain. Used for your Spaces/models and private content.")
+                Text("Read access. Stored in your macOS Keychain. Used for your Spaces/models and private content.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Osaurus (local inference)") {
@@ -380,12 +458,14 @@ struct SettingsView: View {
             if let note = state.settingsSavedNote {
                 Text(note).font(.caption).foregroundStyle(Theme.green)
             }
-            Button("Save") {
+            Button("Save Credentials") {
                 state.saveCredentials()
                 Task { await state.loadMine(); await state.refreshOsaurus() }
             }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
         }
-        .padding(20).frame(width: 460)
+        .padding(24).frame(width: 480)
     }
 }
 
@@ -395,7 +475,7 @@ struct MenuBarView: View {
     @Environment(AppState.self) private var state
     var body: some View {
         @Bindable var s = state
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("🜂 hf.app").font(.headline)
                 Spacer()
@@ -407,18 +487,32 @@ struct MenuBarView: View {
                         .help("Clear chat")
                 }
             }
-            TextField("Quick prompt…", text: $s.prompt, axis: .vertical).textFieldStyle(.roundedBorder).lineLimit(1...4)
+            TextField("Quick prompt…", text: $s.prompt, axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(1...4)
                 .onSubmit { Task { await state.send() } }
             if let last = state.chat.last(where: { $0.role == "assistant" }) {
-                ScrollView { Text(last.content).font(.callout).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
-                    .frame(maxHeight: 170)
+                ScrollView {
+                    Text(last.content)
+                        .font(.callout)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(8)
+                        .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 8))
+                }
+                .frame(maxHeight: 170)
             }
             HStack {
-                Button("Send") { Task { await state.send() } }.disabled(state.generating || state.selectedModel.isEmpty)
+                Button("Send") { Task { await state.send() } }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.accent)
+                    .disabled(state.generating || state.selectedModel.isEmpty)
                 Spacer()
                 if state.generating { ProgressView().controlSize(.small) }
             }
         }
-        .padding(12).frame(width: 320)
+        .padding(14)
+        .frame(width: 340)
+        .background(Theme.glassMaterial)
     }
 }
