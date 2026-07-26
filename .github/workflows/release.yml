@@ -1,0 +1,83 @@
+name: release
+# Tag-driven macOS release: build (SwiftPM) → bundle .app → Developer ID sign →
+# notarize + staple → DMG → GitHub Release. Adapted from entheai's proven flow.
+#
+# Repo secrets required (7):
+#   MACOS_CERTIFICATE      base64 of the Developer ID .p12   (= .env MACOS_CERTIFICATE_SECRET)
+#   MACOS_CERTIFICATE_PWD  the .p12 password
+#   MACOS_SIGN_IDENTITY    e.g. "Developer ID Application: Peter Lodri (TEAMID)"
+#   NOTARY_KEY             base64 of the App Store Connect .p8  (= .env MACOS_NOTARY_KEY)
+#   NOTARY_KEY_ID          the .p8 Key ID           ← NOT in .env; add it
+#   NOTARY_ISSUER_ID       the App Store Connect issuer UUID   ← NOT in .env; add it
+#   KEYCHAIN_PWD           any random string for the temp keychain
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build (release)
+        run: swift build -c release --arch arm64
+
+      - name: Bundle HFMac.app
+        run: |
+          APP="dist/HFMac.app"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp .build/arm64-apple-macosx/release/HFMac "$APP/Contents/MacOS/HFMac"
+          cp Packaging/Info.plist "$APP/Contents/Info.plist"
+          chmod +x "$APP/Contents/MacOS/HFMac"
+
+      - name: Import Developer ID cert into a temporary keychain
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          KEYCHAIN_PWD: ${{ secrets.KEYCHAIN_PWD }}
+        run: |
+          echo "$MACOS_CERTIFICATE" | base64 --decode > cert.p12
+          security create-keychain -p "$KEYCHAIN_PWD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PWD" build.keychain
+          security import cert.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PWD" build.keychain
+          rm -f cert.p12
+
+      - name: Codesign (Developer ID, hardened runtime)
+        env:
+          IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+        run: |
+          APP="dist/HFMac.app"
+          codesign --force --options runtime --timestamp --deep --sign "$IDENTITY" "$APP"
+          codesign --verify --strict --verbose=2 "$APP"
+
+      - name: Notarize + staple
+        env:
+          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          APP="dist/HFMac.app"
+          echo "$NOTARY_KEY" | base64 --decode > AuthKey.p8
+          ditto -c -k --keepParent "$APP" dist/hfmac-notarize.zip
+          xcrun notarytool submit dist/hfmac-notarize.zip \
+            --key AuthKey.p8 --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" --wait
+          xcrun stapler staple "$APP"
+          rm -f AuthKey.p8
+
+      - name: Make DMG
+        run: |
+          mkdir -p dist/dmg && cp -R dist/HFMac.app dist/dmg/
+          ln -s /Applications dist/dmg/Applications
+          hdiutil create -volname "hf.app" -srcfolder dist/dmg -ov -format UDZO dist/hf-mac-${{ github.ref_name }}.dmg
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/hf-mac-*.dmg
+          generate_release_notes: true
