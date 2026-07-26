@@ -61,6 +61,12 @@ final class AppState {
     var moeEnabled = true
     var activeDomain: ExpertDomain = .general
 
+    // entheai memory — preview engine (native Swift port of crates/memory-pp:
+    // keep the past raw, recall the relevant spans across sessions)
+    var memoryEnabled = true
+    var memory = EntheaiMemory()
+    var lastRecallCount = 0
+
     // Credentials (Keychain)
     var hfToken = ""
     var osaurusKey = ""
@@ -80,6 +86,7 @@ final class AppState {
     func bootstrap() async {
         hfToken = Keychain.get("hf_token") ?? ""
         osaurusKey = Keychain.get("osaurus_key") ?? ""
+        memory = EntheaiMemory.load()
         await refreshOsaurus()
         await loadMine()
         // A friendly default: show the featured author's Spaces if empty.
@@ -184,9 +191,21 @@ final class AppState {
         prompt = ""
         do {
             var fullMessages = route.formattedMessages
+            // entheai memory (preview): recall relevant past spans as context.
+            if memoryEnabled, let (ctx, hits) = memory.contextMessage(for: text) {
+                fullMessages.append(ctx)
+                lastRecallCount = hits.count
+            } else {
+                lastRecallCount = 0
+            }
             fullMessages.append(ChatMessage(role: "user", content: text))
             let reply = try await osaurus.chat(model: selectedModel, messages: fullMessages)
             chat.append(ChatMessage(role: "assistant", content: reply))
+            // Keep the past raw — record the exchange for future recall.
+            if memoryEnabled {
+                memory.record(kind: "user", text: text)
+                memory.record(kind: "assistant", text: reply)
+            }
         } catch {
             chat.append(ChatMessage(role: "assistant", content: "⚠️ \(error.localizedDescription)"))
         }
@@ -194,6 +213,11 @@ final class AppState {
 
     func clearChat() {
         chat.removeAll()
+    }
+
+    func clearMemory() {
+        memory.clear()
+        lastRecallCount = 0
     }
 
     func saveCredentials() {

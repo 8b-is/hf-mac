@@ -347,6 +347,32 @@ struct RunView: View {
                 .background(Theme.glassMaterial, in: Capsule())
                 .overlay(Capsule().strokeBorder(state.moeEnabled ? Theme.glassBorderHighlight : Theme.glassBorder))
 
+                // entheai memory (preview engine)
+                HStack(spacing: 6) {
+                    Image(systemName: "brain.head.profile")
+                        .font(.caption2)
+                        .foregroundStyle(state.memoryEnabled ? Theme.green : Theme.dim)
+                    Toggle("Memory", isOn: $s.memoryEnabled)
+                        .toggleStyle(.switch)
+                        .controlSize(.mini)
+                }
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(Theme.glassMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(state.memoryEnabled ? Theme.green.opacity(0.4) : Theme.glassBorder))
+                .help("entheai memory · preview — recalls relevant past exchanges (\(state.memory.count) spans stored)")
+
+                if state.memoryEnabled, state.lastRecallCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkle.magnifyingglass").font(.caption2)
+                        Text("↺\(state.lastRecallCount)")
+                            .font(.system(.caption2, design: .monospaced))
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .foregroundStyle(Theme.green)
+                    .background(Theme.green.opacity(0.12), in: Capsule())
+                    .help("\(state.lastRecallCount) memories recalled into the last prompt")
+                }
+
                 if state.moeEnabled {
                     HStack(spacing: 4) {
                         Image(systemName: state.activeDomain.icon)
@@ -488,6 +514,13 @@ struct SettingsView: View {
                 Toggle("Enable MoE Intent Classifier & Auto-Router", isOn: $s.moeEnabled)
                 Text("Automatically detects code, math, summary, or creative prompts and routes to specialized local models.")
                     .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("entheai memory · preview") {
+                Toggle("Recall relevant past exchanges (on-device)", isOn: $s.memoryEnabled)
+                Text("A native port of entheai's memory-pp engine — keep the past raw, recall the most relevant spans across sessions. \(state.memory.count) spans stored; never leaves your Mac.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Clear memory (\(state.memory.count) spans)") { state.clearMemory() }
+                    .disabled(state.memory.count == 0)
             }
             if let note = state.settingsSavedNote {
                 Text(note).font(.caption).foregroundStyle(Theme.green)
