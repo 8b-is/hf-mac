@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>hf.app — Native macOS Hugging Face Client on Apple Silicon</title>
+  <meta name="description" content="Browse the Hugging Face Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent on macOS. Private, fast, native.">
+  <meta property="og:title" content="hf.app — Native macOS Hugging Face Client">
+  <meta property="og:description" content="Browse the Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://8b-is.github.io/hf-mac/">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="container nav-container">
+      <a href="#" class="brand">
+        <span class="brand-badge">🜂</span> hf.app
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#docs">Documentation</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a href="https://github.com/8b-is/hf-mac/releases" class="btn btn-secondary" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/8b-is/hf-mac" class="btn btn-primary" target="_blank" rel="noopener">GitHub Repo</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container">
+      <div class="badge-pill">
+        <span>🜂</span> Native Apple Silicon macOS Client
+      </div>
+      <h1>Browse HF Hub. Run Locally.<br><span class="gradient-text">Zero Cloud Dependency.</span></h1>
+      <p class="hero-subtitle">
+        The thin, honest macOS front-end for Hugging Face. Driven by <strong>Osaurus</strong> for MLX local inference with zero telemetry, real tokens/sec, and dual window/menu-bar interface.
+      </p>
+      
+      <div class="hero-actions">
+        <a href="https://github.com/8b-is/hf-mac/releases" class="btn btn-primary" target="_blank" rel="noopener">
+          Download latest DMG
+        </a>
+        <a href="#quickstart" class="btn btn-secondary">
+          Run via SwiftPM
+        </a>
+      </div>
+
+      <div class="hero-visual">
+        <img src="assets/images/hero_banner.png" alt="hf.app macOS UI & Apple Silicon Neural Engine" width="1000" height="600" loading="eager">
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Key Features Grid -->
+    <section class="features" id="features">
+      <div class="container">
+        <div class="section-header">
+          <h2>Engineered for On-Device Excellence</h2>
+          <p>Real native macOS app performance with complete data sovereignty and instant accessibility.</p>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-icon">⚡</div>
+            <h3>Apple Silicon Native</h3>
+            <p>Runs seamlessly on M1/M2/M3/M4 unified memory architectures via Osaurus engine for maximum throughput.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">🤗</div>
+            <h3>Live HF Hub Search</h3>
+            <p>Instant model discovery across Hugging Face Hub repositories with model metadata, tags, and pull triggers.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">🜂</div>
+            <h3>Dual Window & Agent UI</h3>
+            <p>Work from a full workspace window or summon the quick prompt agent anytime directly from your macOS Menu Bar.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture & Showcase -->
+    <section class="container" id="architecture">
+      
+      <!-- Showcase Row 1: Privacy -->
+      <div class="showcase-row">
+        <div class="showcase-content">
+          <span class="badge-pill">100% Private</span>
+          <h3>Your Weights, Your Memory, Your Mac</h3>
+          <p>
+            `hf.app` acts as an honest interface layer. It never embeds bulky weights or runs heavy background telemetry. Everything heavy is executed on-device by Osaurus on localhost:1337.
+          </p>
+          <ul class="showcase-list">
+            <li><span>✓</span> Full offline functionality once models are pulled</li>
+            <li><span>✓</span> macOS Keychain integration for Hugging Face tokens</li>
+            <li><span>✓</span> Sandboxed network client architecture</li>
+          </ul>
+        </div>
+        <div class="showcase-img-wrap">
+          <img src="assets/images/privacy_local_graphic.png" alt="100% Private Local AI Execution" width="600" height="600" loading="lazy">
+        </div>
+      </div>
+
+      <!-- Showcase Row 2: Architecture -->
+      <div class="showcase-row reverse">
+        <div class="showcase-content">
+          <span class="badge-pill">Clean Separation</span>
+          <h3>Data Flow & Architecture</h3>
+          <p>
+            Browse models on Hugging Face Hub → pull into Osaurus → chat locally using standard OpenAI-compatible `/v1` endpoints.
+          </p>
+          <ul class="showcase-list">
+            <li><span>✓</span> <strong>Services.swift:</strong> HubClient & OsaurusClient APIs</li>
+            <li><span>✓</span> <strong>HFMacApp.swift:</strong> MainActor Observable AppState</li>
+            <li><span>✓</span> <strong>Views.swift:</strong> SwiftUI WindowGroup + MenuBarExtra</li>
+          </ul>
+        </div>
+        <div class="showcase-img-wrap">
+          <img src="assets/images/architecture_diagram.png" alt="hf-mac Architecture & Data Flow Diagram" width="600" height="600" loading="lazy">
+        </div>
+      </div>
+
+      <!-- Showcase Row 3: Menu Bar -->
+      <div class="showcase-row">
+        <div class="showcase-content">
+          <span class="badge-pill">Always Accessible</span>
+          <h3>Menu Bar Agent Assistant</h3>
+          <p>
+            Need a fast code snippet, translation, or summary? Hit your menu bar icon anytime to open the quick prompt window without interrupting your workflow.
+          </p>
+          <ul class="showcase-list">
+            <li><span>✓</span> Lightweight floating popover window</li>
+            <li><span>✓</span> Instant context switching</li>
+            <li><span>✓</span> Shared state with main window</li>
+          </ul>
+        </div>
+        <div class="showcase-img-wrap">
+          <img src="assets/images/menubar_agent_graphic.png" alt="macOS Menu Bar Quick AI Assistant" width="600" height="600" loading="lazy">
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Interactive Documentation Section -->
+    <section class="docs-section" id="docs">
+      <div class="container">
+        <div class="section-header">
+          <h2>Documentation & Setup Guide</h2>
+          <p>Everything you need to run, build, and extend hf.app on your Mac.</p>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-header">
+          <button class="tab-btn active" data-tab="quickstart" id="tab-btn-quickstart">Quick Start</button>
+          <button class="tab-btn" data-tab="architecture" id="tab-btn-architecture">Codebase Architecture</button>
+          <button class="tab-btn" data-tab="keychain" id="tab-btn-keychain">Keychain & Security</button>
+          <button class="tab-btn" data-tab="publishing" id="tab-btn-publishing">DMG & App Store</button>
+        </div>
+
+        <!-- Tab 1: Quick Start -->
+        <div class="tab-content active" id="tab-quickstart">
+          <h3>Running hf.app locally</h3>
+          <p>Make sure you have Xcode Command Line Tools installed and Osaurus running on <code>localhost:1337</code>.</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span>BASH</span>
+              <button class="copy-btn">Copy</button>
+            </div>
+            <code># 1. Clone the repository
+git clone https://github.com/8b-is/hf-mac.git
+cd hf-mac
+
+# 2. Run with SwiftPM
+swift run</code>
+          </div>
+
+          <p><strong>Prerequisites:</strong> Launch <a href="https://github.com/dinoki-ai/osaurus" target="_blank" style="color: var(--hf-yellow);">Osaurus</a> on localhost:1337, pull your favorite model (e.g., Llama, Qwen, Phi), then click <strong>Refresh</strong> in the Run tab of hf.app.</p>
+        </div>
+
+        <!-- Tab 2: Codebase Architecture -->
+        <div class="tab-content" id="tab-architecture">
+          <h3>Swift Codebase Structure</h3>
+          <p>`hf.app` is organized into clean, single-responsibility Swift files under <code>Sources/HFMac/</code>:</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span>SWIFT ARCHITECTURE</span>
+              <button class="copy-btn">Copy</button>
+            </div>
+            <code>Sources/HFMac/
+├── Services.swift      # HubClient (HF Hub REST) & OsaurusClient (OpenAI /v1)
+├── HFMacApp.swift      # @main App, WindowGroup & MenuBarExtra
+├── Views.swift         # Browse / Run / Your Models UI & Menu Bar agent
+├── Keychain.swift      # Secure HF Token storage in macOS Keychain
+├── OfflineStore.swift   # Local persistence & cached model state
+└── Theme.swift         # Native macOS dark-mode styling tokens</code>
+          </div>
+        </div>
+
+        <!-- Tab 3: Security & Keychain -->
+        <div class="tab-content" id="tab-keychain">
+          <h3>Keychain & Entitlements Security</h3>
+          <p>Your Hugging Face API tokens are stored using macOS <code>Security.framework</code> Services inside the system Keychain (`dev.peterl.hfmac.token`).</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span>ENTITLEMENTS</span>
+              <button class="copy-btn">Copy</button>
+            </div>
+            <code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+&lt;plist version="1.0"&gt;
+&lt;dict&gt;
+    &lt;key&gt;com.apple.security.app-sandbox&lt;/key&gt;
+    &lt;true/&gt;
+    &lt;key&gt;com.apple.security.network.client&lt;/key&gt;
+    &lt;true/&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;</code>
+          </div>
+        </div>
+
+        <!-- Tab 4: Publishing -->
+        <div class="tab-content" id="tab-publishing">
+          <h3>Notarized DMG & Mac App Store Packaging</h3>
+          <p>Automated building and Developer-ID notarization runs on every tag push via GitHub Actions (<code>release.yml</code>).</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span>RELEASE COMMAND</span>
+              <button class="copy-btn">Copy</button>
+            </div>
+            <code># Tag release to trigger Notarized DMG build workflow
+git tag v0.1.0
+git push --tags</code>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-content">
+      <div class="brand">
+        <span>🜂</span> hf.app
+      </div>
+      <p>🜂 <em>ahogy a dolgok vannak</em> — on-device, private, real tokens/sec, no fake states.</p>
+      <div class="footer-links">
+        <a href="https://github.com/8b-is/hf-mac" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/8b-is/hf-mac/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/dinoki-ai/osaurus" target="_blank" rel="noopener">Osaurus Engine</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
