@@ -41,6 +41,7 @@ final class AppState {
     var modelQuery = ""
     var models: [HubModel] = []
     var modelsLoading = false
+    var pullingModel: String?
 
     // Yours (creator)
     var username: String?
@@ -59,6 +60,7 @@ final class AppState {
     // Credentials (Keychain)
     var hfToken = ""
     var osaurusKey = ""
+    var settingsSavedNote: String?
 
     // Offline / Articles
     var offlineSpaces: Set<String> = []
@@ -118,7 +120,10 @@ final class AppState {
     }
 
     func pull(_ model: String) async {
+        pullingModel = model
+        defer { pullingModel = nil }
         osaurusNote = (try? await osaurus.pull(model)) ?? "pull failed"
+        await refreshOsaurus()
     }
 
     /// Authoritative embed URL — prefer an offline snapshot, else the live host.
@@ -169,8 +174,13 @@ final class AppState {
         }
     }
 
+    func clearChat() {
+        chat.removeAll()
+    }
+
     func saveCredentials() {
         Keychain.set(hfToken, for: "hf_token")
         Keychain.set(osaurusKey, for: "osaurus_key")
+        settingsSavedNote = "Saved to macOS Keychain ✓"
     }
 }

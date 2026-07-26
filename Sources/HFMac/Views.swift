@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 enum Tab: String, CaseIterable, Identifiable {
     case spaces = "Spaces"
@@ -30,12 +31,18 @@ struct ContentView: View {
             .navigationTitle("hf.app")
             .navigationSplitViewColumnWidth(min: 160, ideal: 180)
             .safeAreaInset(edge: .bottom) {
-                HStack(spacing: 6) {
-                    Circle().fill(state.osaurusReachable ? Theme.green : Theme.warn).frame(width: 7, height: 7)
-                    Text(state.username.map { "@\($0)" } ?? "not signed in")
-                        .font(.system(.caption2, design: .monospaced)).foregroundStyle(Theme.dim)
-                    Spacer()
-                }.padding(10)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Circle().fill(state.osaurusReachable ? Theme.green : Theme.warn).frame(width: 7, height: 7)
+                        Text(state.username.map { "@\($0)" } ?? "not signed in")
+                            .font(.system(.caption2, design: .monospaced)).foregroundStyle(Theme.dim)
+                        Spacer()
+                    }
+                    Text("🜂 ahogy a dolgok vannak")
+                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Theme.dim.opacity(0.7))
+                }
+                .padding(10)
             }
         } detail: {
             switch tab {
@@ -204,16 +211,32 @@ struct ModelsView: View {
     var body: some View {
         @Bindable var s = state
         List(state.models) { m in
-            VStack(alignment: .leading, spacing: 4) {
-                Text(m.id).font(.headline)
-                HStack(spacing: 12) {
-                    if let t = m.pipeline_tag { Label(t, systemImage: "tag") }
-                    if let d = m.downloads { Label(d.formatted(), systemImage: "arrow.down.circle") }
-                    if let l = m.likes { Label(l.formatted(), systemImage: "heart") }
-                }.font(.caption).foregroundStyle(.secondary)
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(m.id).font(.headline)
+                    HStack(spacing: 12) {
+                        if let t = m.pipeline_tag { Label(t, systemImage: "tag") }
+                        if let d = m.downloads { Label(d.formatted(), systemImage: "arrow.down.circle") }
+                        if let l = m.likes { Label(l.formatted(), systemImage: "heart") }
+                    }.font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if state.pullingModel == m.id {
+                    ProgressView("Pulling…").controlSize(.small)
+                } else {
+                    Button("Pull") { Task { await state.pull(m.id) } }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                }
             }
+            .padding(.vertical, 2)
             .contextMenu {
+                Button("Copy Model ID") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(m.id, forType: .string)
+                }
                 Button("Pull into Osaurus") { Task { await state.pull(m.id) } }
+                Divider()
                 Link("Open on huggingface.co", destination: URL(string: "https://huggingface.co/\(m.id)")!)
             }
         }
@@ -230,35 +253,78 @@ struct RunView: View {
     var body: some View {
         @Bindable var s = state
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 10) {
                 Text("Local model")
                 Picker("", selection: $s.selectedModel) { ForEach(state.osaurusModels) { Text($0.id).tag($0.id) } }
                     .labelsHidden().frame(maxWidth: 260)
                 Button { Task { await state.refreshOsaurus() } } label: { Image(systemName: "arrow.clockwise") }
+                    .help("Refresh local Osaurus models")
+                
+                if !state.chat.isEmpty {
+                    Button { state.clearChat() } label: { Image(systemName: "trash") }
+                        .help("Clear conversation (⌘K)")
+                        .keyboardShortcut("k", modifiers: [.command])
+                }
+
                 Spacer()
-                Text("on-device · Osaurus").font(.caption).foregroundStyle(.secondary)
-            }.padding()
-            if let n = state.osaurusNote { Text(n).font(.caption).foregroundStyle(.orange).padding(.horizontal) }
-            Divider()
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 10) {
-                    ForEach(state.chat) { m in
-                        HStack {
-                            if m.role == "user" { Spacer(minLength: 60) }
-                            Text(m.content).textSelection(.enabled).padding(10)
-                                .background(m.role == "user" ? Color.accentColor.opacity(0.18) : Color.gray.opacity(0.14),
-                                            in: RoundedRectangle(cornerRadius: 12))
-                            if m.role != "user" { Spacer(minLength: 60) }
-                        }
+
+                if !state.osaurusReachable {
+                    Button("Retry Connection") { Task { await state.refreshOsaurus() } }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                } else {
+                    HStack(spacing: 4) {
+                        Circle().fill(Theme.green).frame(width: 6, height: 6)
+                        Text("on-device · Osaurus").font(.caption).foregroundStyle(.secondary)
                     }
-                    if state.generating { HStack { ProgressView().controlSize(.small); Text("thinking…").foregroundStyle(.secondary) } }
-                }.padding()
+                }
+            }.padding()
+
+            if let n = state.osaurusNote {
+                HStack {
+                    Text(n).font(.caption).foregroundStyle(.orange)
+                    Spacer()
+                }.padding(.horizontal).padding(.bottom, 6)
             }
             Divider()
+
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 10) {
+                        ForEach(state.chat) { m in
+                            HStack {
+                                if m.role == "user" { Spacer(minLength: 60) }
+                                Text(m.content).textSelection(.enabled).padding(10)
+                                    .background(m.role == "user" ? Color.accentColor.opacity(0.18) : Color.gray.opacity(0.14),
+                                                in: RoundedRectangle(cornerRadius: 12))
+                                if m.role != "user" { Spacer(minLength: 60) }
+                            }
+                            .id(m.id)
+                        }
+                        if state.generating {
+                            HStack {
+                                ProgressView().controlSize(.small)
+                                Text("thinking…").font(.caption).foregroundStyle(.secondary)
+                            }.id("thinking_indicator")
+                        }
+                    }.padding()
+                }
+                .onChange(of: state.chat.count) { _, _ in
+                    if let lastId = state.chat.last?.id {
+                        withAnimation { proxy.scrollTo(lastId, anchor: .bottom) }
+                    }
+                }
+            }
+            Divider()
+
             HStack(alignment: .bottom) {
-                TextField("Message the model…", text: $s.prompt, axis: .vertical).textFieldStyle(.roundedBorder).lineLimit(1...5)
+                TextField("Message the model…", text: $s.prompt, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(1...5)
                     .onSubmit { Task { await state.send() } }
-                Button("Send") { Task { await state.send() } }.disabled(state.generating || state.selectedModel.isEmpty)
+                Button("Send") { Task { await state.send() } }
+                    .disabled(state.generating || state.selectedModel.isEmpty)
+                    .keyboardShortcut(.return, modifiers: [.command])
             }.padding()
         }
     }
@@ -311,7 +377,13 @@ struct SettingsView: View {
                 Text("Only needed if Osaurus has auth enabled. Talks to localhost:1337.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Button("Save") { state.saveCredentials(); Task { await state.loadMine(); await state.refreshOsaurus() } }
+            if let note = state.settingsSavedNote {
+                Text(note).font(.caption).foregroundStyle(Theme.green)
+            }
+            Button("Save") {
+                state.saveCredentials()
+                Task { await state.loadMine(); await state.refreshOsaurus() }
+            }
         }
         .padding(20).frame(width: 460)
     }
@@ -325,10 +397,15 @@ struct MenuBarView: View {
         @Bindable var s = state
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("hf.app").font(.headline)
+                Text("🜂 hf.app").font(.headline)
                 Spacer()
                 Picker("", selection: $s.selectedModel) { ForEach(state.osaurusModels) { Text($0.id).tag($0.id) } }
                     .labelsHidden().frame(maxWidth: 150)
+                if !state.chat.isEmpty {
+                    Button { state.clearChat() } label: { Image(systemName: "trash").font(.caption) }
+                        .buttonStyle(.plain)
+                        .help("Clear chat")
+                }
             }
             TextField("Quick prompt…", text: $s.prompt, axis: .vertical).textFieldStyle(.roundedBorder).lineLimit(1...4)
                 .onSubmit { Task { await state.send() } }
