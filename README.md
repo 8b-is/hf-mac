@@ -1,95 +1,186 @@
 # 🜂 hf.app — Native macOS Hugging Face Client
 
-![hf.app Hero Banner](assets/images/hero_banner.png)
+![hf.app Widescreen Flagship Header](assets/images/readme_hero.png)
 
 [![Swift](https://img.shields.io/badge/Swift-5.9+-FA7343?logo=swift&logoColor=white)](https://swift.org)
 [![macOS](https://img.shields.io/badge/macOS-14.0+%20(Sonoma)-000000?logo=apple&logoColor=white)](https://apple.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub Pages](https://img.shields.io/badge/Docs-GH%20Pages-FFD21E?logo=github&logoColor=black)](https://8b-is.github.io/hf-mac/)
+[![Security Policy](https://img.shields.io/badge/Security-Policy-06B6D4?logo=shield&logoColor=white)](SECURITY.md)
+[![Contributing](https://img.shields.io/badge/Contributions-Welcome-8B5CF6?logo=github&logoColor=white)](CONTRIBUTING.md)
 
 Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/dinoki-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. `hf.app` is the thin, honest native front-end — Osaurus owns the weights, MLX, and serving.
 
-🌐 **Website & Documentation:** [https://8b-is.github.io/hf-mac/](https://8b-is.github.io/hf-mac/)
+🌐 **Official Web Site & Documentation:** [https://8b-is.github.io/hf-mac/](https://8b-is.github.io/hf-mac/)
 
 ---
 
-## 🔄 The Loop
+## 📑 Table of Contents
 
-![Data Flow & Architecture](assets/images/architecture_diagram.png)
+- [Vision & Philosophy](#-vision--philosophy)
+- [Key Features](#-key-features)
+- [System Requirements & Memory Guide](#-system-requirements--memory-guide)
+- [Architecture & Data Flow](#-architecture--data-flow)
+- [Codebase Structure](#-codebase-structure)
+- [Quick Start](#-quick-start)
+- [Osaurus Companion Setup](#-osaurus-companion-setup)
+- [Security & Data Sovereignty](#-security--data-sovereignty)
+- [Building & Distribution](#-building--distribution)
+- [Contributing & Community](#-contributing--community)
+- [License](#-license)
+
+---
+
+## 🜂 Vision & Philosophy
+
+> *ahogy a dolgok vannak* — on-device, private, real tokens/sec, no fake states.
+
+Most AI desktop applications suffer from bloated electron wrappers, bundled Python environments, or secret telemetry scripts. **`hf.app`** was built with a different philosophy:
+
+1. **Honest Front-End Architecture**: The native Swift application handles user interaction, Hugging Face Hub discovery, and macOS UI integration. It never embeds MLX or Python runtimes directly.
+2. **Dedicated Engine Separation**: Local model execution, weights caching, and MLX quantization are delegated entirely to **Osaurus** — an optimized local inference engine running on `localhost:1337`.
+3. **Data Sovereignty**: Your prompts, conversations, and downloaded weights stay on your machine. Zero cloud telemetry.
+
+---
+
+## ✨ Key Features
+
+| Feature | Description |
+|---|---|
+| ⚡ **Apple Silicon Native** | Built with pure Swift 5.9 and SwiftUI for macOS 14.0+, leveraging M1/M2/M3/M4 unified memory for maximum token throughput. |
+| 🤗 **Live HF Hub Explorer** | Search millions of open-weight models directly from Hugging Face REST APIs with live metadata, model tags, and pull triggers. |
+| 🜂 **Dual Native macOS UI** | Work in a standard desktop application window (`WindowGroup`) or invoke the lightweight menu-bar quick assistant (`MenuBarExtra`) anytime. |
+| 🔐 **Keychain Token Isolation** | Securely encrypt and store Hugging Face User Access Tokens in the system macOS Keychain using `Security.framework`. |
+| 🌐 **Offline First** | Once local models are pulled into Osaurus, chat and prompt inference operate completely offline with no network requirement. |
+
+![Privacy and On-Device Local Execution](assets/images/privacy_local_graphic.png)
+
+---
+
+## 💻 System Requirements & Memory Guide
+
+### Minimum Requirements
+- **Operating System**: macOS 14.0 (Sonoma) or later.
+- **Processor**: Apple Silicon (M1/M2/M3/M4) or Intel Mac with dedicated Metal GPU.
+- **Local Engine**: [Osaurus](https://github.com/dinoki-ai/osaurus) running on `localhost:1337`.
+
+### Recommended Memory Allocation for Local Models
+
+| Model Size | Recommended RAM | Suggested Quantization | Example Models |
+|---|---|---|---|
+| **3B – 7B Parameters** | 8 GB – 16 GB | 4-bit / 8-bit MLX | Llama 3 8B, Phi-3-Mini, Mistral 7B |
+| **8B – 14B Parameters** | 16 GB – 32 GB | 4-bit MLX | Qwen 2.5 14B, Gemma 2 9B |
+| **30B – 70B Parameters** | 36 GB – 128 GB | 4-bit / 6-bit MLX | Llama 3.3 70B, Qwen 2.5 32B |
+
+---
+
+## 🏗️ Architecture & Data Flow
+
+![Data Flow Diagram](assets/images/architecture_diagram.png)
+
+The system loop follows a clear 4-step pipeline:
 
 ```
 Browse HF Hub  →  Pull to Osaurus  →  Run & Chat Locally (Private)  →  Manage Models
 ```
 
----
-
-## ✨ Features
-
-- ⚡ **Apple Silicon Unified Memory Performance**: Driven by Osaurus over localhost:1337 OpenAI-compatible `/v1` endpoints.
-- 🤗 **Live Hugging Face Search**: Discover open-weight LLMs, filter by tags, and explore model cards in real-time.
-- 🜂 **Dual Native macOS UI**: Switch seamlessly between a full SwiftUI app window (`WindowGroup`) and a lightweight menu-bar quick assistant (`MenuBarExtra`).
-- 🔐 **100% On-Device Privacy**: Zero telemetry, no cloud dependency for inference. API tokens stay encrypted in the macOS Keychain.
-
-![Privacy & On-Device AI](assets/images/privacy_local_graphic.png)
+1. **Browse**: `HubClient` queries the Hugging Face REST API (`api-inference.huggingface.co`) for model cards, tags, and creator metadata.
+2. **Pull**: Model weights are downloaded and cached by **Osaurus** into unified memory.
+3. **Run**: `OsaurusClient` streams OpenAI-compatible `/v1/chat/completions` JSON responses to SwiftUI views.
+4. **Chat**: Text generation streams in real time both in the main workspace window and the floating menu-bar agent.
 
 ---
 
-## 🚀 Quick Start (Dev)
-
-### Prerequisites
-1. **macOS 14.0+** (Sonoma or later) on Apple Silicon or Intel.
-2. **[Osaurus](https://github.com/dinoki-ai/osaurus)** installed and running on `localhost:1337`.
-
-### Run via SwiftPM
-```bash
-# Clone the repository
-git clone https://github.com/8b-is/hf-mac.git
-cd hf-mac
-
-# Run dev target
-swift run
-```
-
-> **Note:** Pull your desired model inside Osaurus first, then hit **Refresh** in the **Run** tab of `hf.app`.
-
----
-
-## 🛠️ Architecture
+## 📂 Codebase Structure
 
 ![Menu Bar Quick Agent Visual](assets/images/menubar_agent_graphic.png)
 
-The application architecture is strictly modularized into thin, reactive components:
+The codebase is organized into clean, single-responsibility Swift modules:
 
-| Component | Responsibility |
-|---|---|
-| [`Services.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Services.swift) | `HubClient` (HF Hub REST API search/metadata) · `OsaurusClient` (Osaurus `/v1` OpenAI API for models & chat completion) |
-| [`HFMacApp.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/HFMacApp.swift) | `@main App` entry point configuring `WindowGroup` and `MenuBarExtra` with a unified `@Observable AppState` |
-| [`Views.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Views.swift) | SwiftUI views for Browse, Run, Your Models, and the Menu Bar Agent popover |
-| [`Keychain.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Keychain.swift) | Secure storage wrapper for Hugging Face User Access Tokens using macOS Keychain |
+```
+Sources/HFMac/
+├── HFMacApp.swift      # @main App entry point, WindowGroup & MenuBarExtra setup
+├── Services.swift      # HubClient (HF Hub REST) & OsaurusClient (OpenAI /v1 API)
+├── Views.swift         # SwiftUI view hierarchy (Browse, Run, Your Models, MenuBar agent)
+├── Keychain.swift      # Security.framework wrapper for HF tokens
+├── OfflineStore.swift   # Local persistence & cached model state
+├── WebView.swift       # WKWebView bridge for interactive model cards
+└── Theme.swift         # Modern macOS dark mode tokens & styling constants
+```
 
-The app never embeds MLX directly — it drives Osaurus. Everything heavy stays in the engine.
+### Key Modules
+
+- [`Services.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Services.swift): Contains `HubClient` for Hugging Face REST search and `OsaurusClient` for local OpenAI-compatible endpoint communication.
+- [`HFMacApp.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/HFMacApp.swift): The main application definition managing reactive `@Observable AppState`.
+- [`Views.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Views.swift): Defines SwiftUI components for browsing, chatting, model management, and the floating menu-bar quick agent.
+- [`Keychain.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Keychain.swift): Implements secure OS-level keychain access (`dev.peterl.hfmac.token`).
 
 ---
 
-## 📦 Building & Publishing
+## 🚀 Quick Start
 
-Refer to [`PUBLISHING.md`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/PUBLISHING.md) for details on notarized Developer-ID DMG releases and Mac App Store packaging.
+### Option A: Pre-built Notarized DMG
+Download the latest Developer-ID notarized `.dmg` release from our [Releases Page](https://github.com/8b-is/hf-mac/releases), open the disk image, and drag `HFMac.app` to your `Applications` folder.
 
-To build a notarized release DMG locally or via CI:
+### Option B: Build & Run from Source
+
 ```bash
-git tag v0.1.0
-git push --tags
+# 1. Clone the repository
+git clone https://github.com/8b-is/hf-mac.git
+cd hf-mac
+
+# 2. Compile and run with Swift Package Manager
+swift run
+```
+
+Or open in Xcode:
+```bash
+open Package.swift
 ```
 
 ---
 
-## 🚦 Roadmap & Status
+## 🔌 Osaurus Companion Setup
 
-- [x] **MVP:** Live Hugging Face Hub search, live local chat via Osaurus, menu-bar quick agent.
-- [x] **GH Pages & Documentation:** Web landing page, architecture graphics, automated deployment workflow.
-- [ ] **Keychain Integration:** One-click HF token sign-in → your private models and Spaces.
-- [ ] **One-Click Pull-to-Osaurus:** Download models directly into Osaurus from `hf.app`.
-- [ ] **1-Bit / Ternary Models:** Native support for `rivaquant` on-device quantization models.
+`hf.app` relies on **Osaurus** for local model serving:
+
+1. Download and launch **[Osaurus](https://github.com/dinoki-ai/osaurus)** on your Mac.
+2. Ensure Osaurus is listening on `http://localhost:1337`.
+3. Pull your desired model inside Osaurus (e.g. `llama3:8b`).
+4. Click **Refresh** in the **Run** tab of `hf.app` to instantly sync available local models.
+
+---
+
+## 🛡️ Security & Data Sovereignty
+
+- **App Sandbox Entitlements**: Enforced via [`Packaging/hf-mac.entitlements`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Packaging/hf-mac.entitlements) (`com.apple.security.app-sandbox` and `com.apple.security.network.client`).
+- **Zero Telemetry**: No tracking cookies, analytics SDKs, or diagnostic logging.
+- **Keychain Security**: Hugging Face access tokens are encrypted in the macOS Keychain.
+- See our full [`SECURITY.md`](SECURITY.md) policy for vulnerability disclosure guidelines.
+
+---
+
+## 📦 Building & Distribution
+
+Build targets and notarization processes are documented in [`PUBLISHING.md`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/PUBLISHING.md):
+
+- **Direct Notarized DMG**: Automated build via `.github/workflows/release.yml` on `v*` tag pushes.
+- **Mac App Store**: Scaffolded in `.github/workflows/mas.yml` for sandboxed App Store Connect upload.
+
+---
+
+## 🤝 Contributing & Community
+
+Contributions are welcome! Please read our [`CONTRIBUTING.md`](CONTRIBUTING.md) guide for details on development setup, Swift style guidelines, and pull request procedures.
+
+- **Found a bug?** Open an issue on [GitHub Issues](https://github.com/8b-is/hf-mac/issues).
+- **Security concern?** Refer to [`SECURITY.md`](SECURITY.md).
+
+---
+
+## 📄 License
+
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
 
 ---
 
