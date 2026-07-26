@@ -216,21 +216,56 @@ swift run</code>
 
         <!-- Tab 2: Codebase Architecture -->
         <div class="tab-content" id="tab-architecture">
-          <h3>Swift Codebase Structure</h3>
-          <p>`hf.app` is organized into clean, single-responsibility Swift files under <code>Sources/HFMac/</code>:</p>
-          
-          <div class="code-block">
-            <div class="code-header">
-              <span>SWIFT ARCHITECTURE</span>
-              <button class="copy-btn">Copy</button>
+          <h3>Swift codebase — <code>Sources/HFMac/</code></h3>
+          <p>Seven single-responsibility files, ~1,100 lines total. hf.app drives <a href="https://github.com/osaurus-ai/osaurus" target="_blank" rel="noopener" style="color: var(--hf-yellow);">Osaurus</a> for inference and embeds live Spaces — it never bundles weights or a model runtime. Read by layer:</p>
+
+          <div class="arch-map">
+            <div class="arch-group">
+              <div class="arch-group-label">Entry</div>
+              <div class="arch-row">
+                <span class="arch-file">HFMacApp.swift</span>
+                <span class="arch-role"><code>@main</code> App — <code>WindowGroup</code> + <code>MenuBarExtra</code>, holding the <code>@Observable</code> <code>AppState</code> the whole UI reads.</span>
+                <span class="arch-loc">186 loc</span>
+              </div>
             </div>
-            <code>Sources/HFMac/
-├── Services.swift      # HubClient (HF Hub REST) & OsaurusClient (OpenAI /v1)
-├── HFMacApp.swift      # @main App, WindowGroup & MenuBarExtra
-├── Views.swift         # Browse / Run / Your Models UI & Menu Bar agent
-├── Keychain.swift      # Secure HF Token storage in macOS Keychain
-├── OfflineStore.swift   # Local persistence & cached model state
-└── Theme.swift         # Native macOS dark-mode styling tokens</code>
+
+            <div class="arch-group">
+              <div class="arch-group-label">Data &amp; services</div>
+              <div class="arch-row">
+                <span class="arch-file">Services.swift</span>
+                <span class="arch-role"><code>HubClient</code> (HF Hub REST — model &amp; Space search) and <code>OsaurusClient</code> (OpenAI <code>/v1</code> chat + model pull), with the <code>HubModel</code> / <code>HFSpace</code> types.</span>
+                <span class="arch-loc">257 loc</span>
+              </div>
+              <div class="arch-row">
+                <span class="arch-file">OfflineStore.swift</span>
+                <span class="arch-role">Offline content on disk — full static-Space snapshots (playable with no network) and cached article HTML, under Application Support.</span>
+                <span class="arch-loc">41 loc</span>
+              </div>
+              <div class="arch-row">
+                <span class="arch-file">Keychain.swift</span>
+                <span class="arch-role">Wrapper for the two secrets — the HF token and the optional Osaurus key. Never written to disk in the clear.</span>
+                <span class="arch-loc">37 loc</span>
+              </div>
+            </div>
+
+            <div class="arch-group">
+              <div class="arch-group-label">Interface</div>
+              <div class="arch-row">
+                <span class="arch-file">Views.swift</span>
+                <span class="arch-role">The five tabs — <strong>Spaces</strong>, <strong>Articles</strong>, <strong>Models</strong>, <strong>Run</strong>, <strong>Yours</strong> — plus the menu-bar agent and settings.</span>
+                <span class="arch-loc">506 loc</span>
+              </div>
+              <div class="arch-row">
+                <span class="arch-file">WebView.swift</span>
+                <span class="arch-role"><code>SpaceWebView</code> — embeds a live Hugging Face Space (<code>*.hf.space</code>) so quantum games, Gradio, and static apps run on the desktop; caches visited assets.</span>
+                <span class="arch-loc">39 loc</span>
+              </div>
+              <div class="arch-row">
+                <span class="arch-file">Theme.swift</span>
+                <span class="arch-role">The pocoo.vaked.dev palette — near-black-blue ground, cyan accent, mono type — over native macOS glass materials.</span>
+                <span class="arch-loc">40 loc</span>
+              </div>
+            </div>
           </div>
         </div>
 

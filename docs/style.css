@@ -490,6 +490,86 @@ p {
   color: #000;
 }
 
+/* Architecture Module Map (Codebase tab) */
+.arch-map {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  margin-top: 24px;
+}
+
+.arch-group-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.arch-group-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.arch-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) 1fr auto;
+  gap: 6px 22px;
+  align-items: baseline;
+  padding: 13px 6px;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.arch-row:last-child { border-bottom: none; }
+.arch-row:hover { background: rgba(255, 210, 30, 0.04); }
+
+.arch-file {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--hf-yellow);
+}
+
+.arch-role {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.arch-role code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+.arch-loc {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .arch-row {
+    grid-template-columns: 1fr auto;
+    gap: 4px 16px;
+  }
+  .arch-role { grid-column: 1 / -1; }
+}
+
 /* Footer (Vaked Constellation Style) */
 footer {
   padding: 60px 0 40px;
