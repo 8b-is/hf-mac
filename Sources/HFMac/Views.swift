@@ -247,13 +247,38 @@ struct ArticleReaderView: View {
 
 struct ModelsView: View {
     @Environment(AppState.self) private var state
+    @ViewBuilder private func fastChip(_ label: String, _ query: String) -> some View {
+        Button(label) { state.modelQuery = query; Task { await state.searchModels() } }
+            .buttonStyle(.bordered).controlSize(.small).tint(Theme.green)
+    }
+
     var body: some View {
         @Bindable var s = state
-        List(state.models) { m in
+        VStack(spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    Text("⚡ Faster = fewer bits").font(.caption).foregroundStyle(Theme.dim)
+                    fastChip("MLX 4-bit", "mlx 4bit")
+                    fastChip("MLX", "mlx")
+                    fastChip("🜂 Ternary · BitNet", "bitnet")
+                    fastChip("GGUF", "gguf")
+                }
+                .padding(.horizontal, 14).padding(.vertical, 8)
+            }
+            .background(Theme.glassBarMaterial)
+            Divider()
+            List(state.models) { m in
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(m.id).font(.system(.headline, design: .monospaced))
                     HStack(spacing: 14) {
+                        let sp = ModelSpeed.of(m.id, library: m.library_name)
+                        if !sp.label.isEmpty {
+                            Text(sp.label).font(.caption2)
+                                .padding(.horizontal, 6).padding(.vertical, 1)
+                                .background((sp.isFast ? Theme.green : Theme.dim).opacity(0.16), in: Capsule())
+                                .foregroundStyle(sp.isFast ? Theme.green : Theme.dim)
+                        }
                         if let t = m.pipeline_tag { Label(t, systemImage: "tag") }
                         if let d = m.downloads { Label(d.formatted(), systemImage: "arrow.down.circle") }
                         if let l = m.likes { Label(l.formatted(), systemImage: "heart") }
@@ -283,7 +308,8 @@ struct ModelsView: View {
         .listStyle(.inset)
         .searchable(text: $s.modelQuery, prompt: "Search models (e.g., Llama, Qwen, Mistral)")
         .onSubmit(of: .search) { Task { await state.searchModels() } }
-        .overlay { if state.models.isEmpty { ContentUnavailableView("Find a model", systemImage: "cube.box", description: Text("Search open-weight models, then pull into Osaurus to run locally on Apple Silicon.")) } }
+        .overlay { if state.models.isEmpty { ContentUnavailableView("Find a model", systemImage: "cube.box", description: Text("Search open-weight models, then pull into Osaurus. Prefer MLX 4-bit — it runs 2–4× faster on Apple Silicon.")) } }
+        }
     }
 }
 
