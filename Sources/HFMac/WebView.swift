@@ -13,6 +13,7 @@ struct SpaceWebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
+        config.mediaTypesRequiringUserActionForPlayback = []
         let wv = WKWebView(frame: .zero, configuration: config)
         wv.setValue(false, forKey: "drawsBackground")
         wv.allowsBackForwardNavigationGestures = true
@@ -28,10 +29,11 @@ struct SpaceWebView: NSViewRepresentable {
         }
     }
 
-    /// Local file → offline (grant read to the whole snapshot dir); else network.
+    /// Local file → offline (grant read access to the spaces directory root); else network.
     private func load(_ url: URL, in wv: WKWebView) {
         if url.isFileURL {
-            wv.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+            let readAccessDir = url.deletingLastPathComponent()
+            wv.loadFileURL(url, allowingReadAccessTo: readAccessDir)
         } else {
             wv.load(URLRequest(url: url))
         }

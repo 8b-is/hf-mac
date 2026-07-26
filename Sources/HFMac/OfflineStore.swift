@@ -14,13 +14,28 @@ enum OfflineStore {
     static func spaceDir(_ id: String) -> URL {
         spacesRoot.appending(path: id.replacingOccurrences(of: "/", with: "__"))
     }
+
     static func isSpaceDownloaded(_ id: String) -> Bool {
-        FileManager.default.fileExists(atPath: spaceDir(id).appending(path: "index.html").path)
+        let dir = spaceDir(id)
+        guard FileManager.default.fileExists(atPath: dir.path) else { return false }
+        let idx = dir.appending(path: "index.html")
+        if FileManager.default.fileExists(atPath: idx.path) { return true }
+        // Fallback: check if the directory contains any .html file.
+        let files = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
+        return files.contains(where: { $0.hasSuffix(".html") || $0.hasSuffix(".htm") })
     }
+
     static func spaceIndex(_ id: String) -> URL? {
-        let idx = spaceDir(id).appending(path: "index.html")
-        return FileManager.default.fileExists(atPath: idx.path) ? idx : nil
+        let dir = spaceDir(id)
+        let idx = dir.appending(path: "index.html")
+        if FileManager.default.fileExists(atPath: idx.path) { return idx }
+        let files = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
+        if let html = files.first(where: { $0.hasSuffix(".html") || $0.hasSuffix(".htm") }) {
+            return dir.appending(path: html)
+        }
+        return nil
     }
+
     static func removeSpace(_ id: String) {
         try? FileManager.default.removeItem(at: spaceDir(id))
     }

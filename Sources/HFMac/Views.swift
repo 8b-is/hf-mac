@@ -170,7 +170,11 @@ struct SpacePlayerView: View {
                     Image(systemName: "checkmark.icloud").foregroundStyle(Theme.green).help("Available offline")
                 } else {
                     Button {
-                        Task { await state.downloadSpaceOffline(space); url = await state.resolveHost(space) }
+                        Task {
+                            await state.downloadSpaceOffline(space)
+                            state.refreshOffline()
+                            url = await state.resolveHost(space)
+                        }
                     } label: { Image(systemName: "arrow.down.circle") }
                     .help("Download for offline play")
                 }
@@ -492,15 +496,28 @@ struct MenuBarView: View {
                 .lineLimit(1...4)
                 .onSubmit { Task { await state.send() } }
             if let last = state.chat.last(where: { $0.role == "assistant" }) {
-                ScrollView {
-                    Text(last.content)
-                        .font(.callout)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(8)
-                        .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 8))
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Spacer()
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(last.content, forType: .string)
+                        } label: {
+                            Label("Copy", systemImage: "doc.on.doc").font(.caption2)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Theme.accent)
+                    }
+                    ScrollView {
+                        Text(last.content)
+                            .font(.callout)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                            .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    }
+                    .frame(maxHeight: 170)
                 }
-                .frame(maxHeight: 170)
             }
             HStack {
                 Button("Send") { Task { await state.send() } }
