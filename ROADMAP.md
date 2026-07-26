@@ -12,6 +12,9 @@ maps those gems to concrete integrations. 🜂 *ahogy a dolgok vannak.*
   space.* On-device raw span store + lexical recall mirroring entheai's `NativeMesh`
   scorer (distinct query-term overlap). Wired into chat (recall-inject + record-raw),
   Run-toolbar toggle, Settings. Verified end-to-end. No model, no network, no telemetry.
+- **v0.9.0 — Mozart polish.** Hover-to-copy on any message; the active model'''s
+  speed shows by the picker *and* in an elegant empty-chat welcome — the quant/
+  speed awareness now harmonizes across Models · Run · welcome.
 - **v0.8.0 — Chat polish.** Replies render markdown with fenced code blocks
   (streaming-safe — an unclosed fence renders as a growing code block); the view
   follows the streaming reply as it grows; a **Stop** button (⌘.) cancels a

@@ -354,20 +354,42 @@ struct MarkdownText: View {
 
 struct ChatBubbleView: View {
     let message: ChatMessage
+    @State private var hovering = false
+    @State private var copied = false
 
     var body: some View {
         let isUser = message.role == "user"
         let bg = isUser ? Theme.accent.opacity(0.18) : Color.gray.opacity(0.15)
         let border = isUser ? Theme.glassBorderHighlight : Theme.glassBorder
 
-        HStack {
+        HStack(alignment: .top) {
             if isUser { Spacer(minLength: 60) }
             MarkdownText(text: message.content)
                 .padding(12)
                 .background(bg, in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(border))
+                .overlay(alignment: .topTrailing) {
+                    if hovering, !message.content.isEmpty {
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(message.content, forType: .string)
+                            copied = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copied = false }
+                        } label: {
+                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                                .font(.caption2).padding(6)
+                                .background(Theme.glassMaterial, in: Circle())
+                                .overlay(Circle().strokeBorder(Theme.glassBorder))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(copied ? Theme.green : Theme.dim)
+                        .offset(x: 9, y: -9)
+                        .help("Copy")
+                    }
+                }
             if !isUser { Spacer(minLength: 60) }
         }
+        .onHover { hovering = $0 }
     }
 }
 
@@ -384,6 +406,11 @@ struct RunView: View {
                     .foregroundStyle(Theme.dim)
                 Picker("", selection: $s.selectedModel) { ForEach(state.osaurusModels) { Text($0.id).tag($0.id) } }
                     .labelsHidden().frame(maxWidth: 240)
+                let sp = ModelSpeed.of(state.selectedModel)
+                if !state.selectedModel.isEmpty, !sp.label.isEmpty {
+                    Text(sp.label).font(.system(.caption2, design: .monospaced))
+                        .foregroundStyle(sp.isFast ? Theme.green : Theme.dim)
+                }
                 Button { Task { await state.refreshOsaurus() } } label: { Image(systemName: "arrow.clockwise") }
                     .help("Refresh local Osaurus models (⌘R)")
                     .keyboardShortcut("r", modifiers: [.command])
@@ -495,6 +522,27 @@ struct RunView: View {
                         }
                     }
                     .padding(16)
+                }
+                .overlay {
+                    if state.chat.isEmpty, !state.generating {
+                        VStack(spacing: 12) {
+                            Image(systemName: "bubble.left.and.text.bubble.right")
+                                .font(.system(size: 40)).foregroundStyle(Theme.dim.opacity(0.7))
+                            Text("Chat, locally").font(.title3.weight(.semibold)).foregroundStyle(Theme.fg)
+                            if state.selectedModel.isEmpty {
+                                Text("Pull a model in the Models tab, then talk to it here — nothing leaves your Mac.")
+                                    .font(.callout).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+                            } else {
+                                let sp = ModelSpeed.of(state.selectedModel)
+                                Text(state.selectedModel + (sp.label.isEmpty ? "" : " · \(sp.label)"))
+                                    .font(.system(.caption, design: .monospaced))
+                                    .foregroundStyle(sp.isFast ? Theme.green : Theme.dim)
+                                Text("Ask anything — replies stream in at the model's real speed.")
+                                    .font(.callout).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+                            }
+                        }
+                        .frame(maxWidth: 360).padding()
+                    }
                 }
                 .onChange(of: state.chat.count) { _, _ in
                     if let lastId = state.chat.last?.id {
