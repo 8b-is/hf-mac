@@ -26,7 +26,7 @@ options:
 
 settings:
   base:
-    MARKETING_VERSION: "0.9.0"      # CFBundleShortVersionString (kept == Info.plist)
+    MARKETING_VERSION: "0.9.1"      # CFBundleShortVersionString (kept == Info.plist)
     CURRENT_PROJECT_VERSION: "1"    # CFBundleVersion / build number
     SWIFT_VERSION: "6.0"            # Swift 6 language mode (matches Package.swift tools 6.0)
     DEVELOPMENT_LANGUAGE: en
@@ -41,6 +41,7 @@ targets:
     deploymentTarget: "14.0"
     sources:
       - path: Sources/HFMac
+      - path: Packaging/AppIcon.icns
     settings:
       base:
         PRODUCT_NAME: HFMac                              # → HFMac.app (display name "hf.app" comes from Info.plist)

@@ -35,6 +35,7 @@ jobs:
           mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
           cp .build/arm64-apple-macosx/release/HFMac "$APP/Contents/MacOS/HFMac"
           cp Packaging/Info.plist "$APP/Contents/Info.plist"
+          cp Packaging/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
           chmod +x "$APP/Contents/MacOS/HFMac"
 
       - name: Import Developer ID cert into a temporary keychain
