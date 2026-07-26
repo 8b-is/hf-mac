@@ -162,10 +162,10 @@ final class AppState {
 
     func send() async {
         let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !selectedModel.isEmpty else { return }
+        guard !generating, !text.isEmpty, !selectedModel.isEmpty else { return }
+        generating = true; defer { generating = false }
         chat.append(ChatMessage(role: "user", content: text))
         prompt = ""
-        generating = true; defer { generating = false }
         do {
             let reply = try await osaurus.chat(model: selectedModel, messages: chat)
             chat.append(ChatMessage(role: "assistant", content: reply))
@@ -182,5 +182,9 @@ final class AppState {
         Keychain.set(hfToken, for: "hf_token")
         Keychain.set(osaurusKey, for: "osaurus_key")
         settingsSavedNote = "Saved to macOS Keychain ✓"
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            settingsSavedNote = nil
+        }
     }
 }

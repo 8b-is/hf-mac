@@ -10,7 +10,7 @@ enum HubError: LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .invalidURL: "Invalid Hugging Face API URL."
-        case .networkError(let resp): "Hugging Face API error (HTTP \(resp.statusCode))."
+        case .networkError(let resp): "Hugging Face API returned HTTP status \(resp.statusCode)."
         case .decodeError(let err): "Failed to parse Hugging Face data: \(err.localizedDescription)"
         }
     }
@@ -78,22 +78,41 @@ struct HubClient: Sendable {
         var c = URLComponents(string: "https://huggingface.co/api/models")!
         c.queryItems = [.init(name: "search", value: query), .init(name: "limit", value: String(limit)),
                         .init(name: "sort", value: "downloads"), .init(name: "direction", value: "-1")]
-        let (data, _) = try await URLSession.shared.data(for: authed(c.url!))
-        return try JSONDecoder().decode([HubModel].self, from: data)
+        guard let url = c.url else { throw HubError.invalidURL }
+        let (data, resp) = try await URLSession.shared.data(for: authed(url))
+        guard let httpResp = resp as? HTTPURLResponse else { throw HubError.invalidURL }
+        guard httpResp.statusCode == 200 else { throw HubError.networkError(httpResp) }
+        do {
+            return try JSONDecoder().decode([HubModel].self, from: data)
+        } catch {
+            throw HubError.decodeError(error)
+        }
     }
 
     func searchSpaces(_ query: String, limit: Int = 40) async throws -> [HFSpace] {
         var c = URLComponents(string: "https://huggingface.co/api/spaces")!
         c.queryItems = [.init(name: "search", value: query), .init(name: "limit", value: String(limit)),
                         .init(name: "sort", value: "likes"), .init(name: "direction", value: "-1")]
-        let (data, _) = try await URLSession.shared.data(for: authed(c.url!))
-        return try JSONDecoder().decode([HFSpace].self, from: data)
+        guard let url = c.url else { throw HubError.invalidURL }
+        let (data, resp) = try await URLSession.shared.data(for: authed(url))
+        guard let httpResp = resp as? HTTPURLResponse else { throw HubError.invalidURL }
+        guard httpResp.statusCode == 200 else { throw HubError.networkError(httpResp) }
+        do {
+            return try JSONDecoder().decode([HFSpace].self, from: data)
+        } catch {
+            throw HubError.decodeError(error)
+        }
     }
 
     func spaces(author: String, limit: Int = 60) async throws -> [HFSpace] {
         var c = URLComponents(string: "https://huggingface.co/api/spaces")!
         c.queryItems = [.init(name: "author", value: author), .init(name: "limit", value: String(limit))]
-        let (data, _) = try await URLSession.shared.data(for: authed(c.url!))
+        guard let url = c.url else { throw HubError.invalidURL }
+        let (data, resp) = try await URLSession.shared.data(for: authed(url))
+        guard let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            if let httpResp = resp as? HTTPURLResponse { throw HubError.networkError(httpResp) }
+            throw HubError.invalidURL
+        }
         return try JSONDecoder().decode([HFSpace].self, from: data)
     }
 
@@ -101,13 +120,19 @@ struct HubClient: Sendable {
         var c = URLComponents(string: "https://huggingface.co/api/models")!
         c.queryItems = [.init(name: "author", value: author), .init(name: "limit", value: String(limit)),
                         .init(name: "sort", value: "downloads"), .init(name: "direction", value: "-1")]
-        let (data, _) = try await URLSession.shared.data(for: authed(c.url!))
+        guard let url = c.url else { throw HubError.invalidURL }
+        let (data, resp) = try await URLSession.shared.data(for: authed(url))
+        guard let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            if let httpResp = resp as? HTTPURLResponse { throw HubError.networkError(httpResp) }
+            throw HubError.invalidURL
+        }
         return try JSONDecoder().decode([HubModel].self, from: data)
     }
 
     /// Fetch a Space's authoritative embed host (correct for static vs gradio).
     func spaceHost(_ id: String) async -> URL? {
-        guard let (data, _) = try? await URLSession.shared.data(for: authed(URL(string: "https://huggingface.co/api/spaces/\(id)")!)),
+        guard let (data, resp) = try? await URLSession.shared.data(for: authed(URL(string: "https://huggingface.co/api/spaces/\(id)")!)),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else { return nil }
         if let host = obj["host"] as? String, let u = URL(string: host) { return u }
@@ -117,8 +142,9 @@ struct HubClient: Sendable {
 
     /// List a Space's files (for offline snapshot). Static spaces = plain files.
     func spaceFiles(_ id: String) async throws -> [String] {
-        let url = URL(string: "https://huggingface.co/api/spaces/\(id)/tree/main?recursive=true")!
-        let (data, _) = try await URLSession.shared.data(for: authed(url))
+        guard let url = URL(string: "https://huggingface.co/api/spaces/\(id)/tree/main?recursive=true") else { return [] }
+        let (data, resp) = try await URLSession.shared.data(for: authed(url))
+        guard (resp as? HTTPURLResponse)?.statusCode == 200 else { return [] }
         let arr = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] ?? []
         return arr.compactMap { ($0["type"] as? String) == "file" ? $0["path"] as? String : nil }
     }
@@ -130,7 +156,8 @@ struct HubClient: Sendable {
         let dir = OfflineStore.spaceDir(id)
         var written = 0
         for path in files {
-            guard let src = URL(string: "https://huggingface.co/spaces/\(id)/resolve/main/\(path)") else { continue }
+            guard let safePath = path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+                  let src = URL(string: "https://huggingface.co/spaces/\(id)/resolve/main/\(safePath)") else { continue }
             let (data, resp) = try await URLSession.shared.data(for: authed(src))
             guard (resp as? HTTPURLResponse)?.statusCode == 200 else { continue }
             try OfflineStore.write(data, to: dir.appending(path: path))
@@ -174,7 +201,11 @@ struct OsaurusClient: Sendable {
     }
 
     func models() async throws -> [OsaurusModel] {
-        let (data, _) = try await URLSession.shared.data(for: req("/v1/models"))
+        let (data, resp) = try await URLSession.shared.data(for: req("/v1/models"))
+        guard let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            let code = (resp as? HTTPURLResponse)?.statusCode ?? 500
+            throw OsaurusError.httpError(code)
+        }
         return try JSONDecoder().decode(OsaurusModelList.self, from: data).data
     }
 
@@ -186,7 +217,9 @@ struct OsaurusClient: Sendable {
             "messages": messages.map { ["role": $0.role, "content": $0.content] },
             "stream": false,
         ])
-        let (data, _) = try await URLSession.shared.data(for: r)
+        let (data, resp) = try await URLSession.shared.data(for: r)
+        guard let httpResp = resp as? HTTPURLResponse else { throw OsaurusError.invalidResponse }
+        guard httpResp.statusCode == 200 else { throw OsaurusError.httpError(httpResp.statusCode) }
         let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         let choices = obj?["choices"] as? [[String: Any]]
         let msg = choices?.first?["message"] as? [String: Any]
@@ -225,7 +258,8 @@ struct ArticleService: Sendable {
     func fetch() async -> [Article] {
         var out: [Article] = []
         for src in Self.sources {
-            guard let (data, _) = try? await URLSession.shared.data(from: src.llms),
+            guard let (data, resp) = try? await URLSession.shared.data(from: src.llms),
+                  (resp as? HTTPURLResponse)?.statusCode == 200,
                   let text = String(data: data, encoding: .utf8) else { continue }
             for raw in text.split(separator: "\n") {
                 let line = String(raw)
