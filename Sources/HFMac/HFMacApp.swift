@@ -192,26 +192,39 @@ final class AppState {
 
         chat.append(ChatMessage(role: "user", content: text))
         prompt = ""
+
+        var fullMessages = route.formattedMessages
+        // entheai memory (preview): recall relevant past spans as context.
+        if memoryEnabled, let (ctx, hits) = memory.contextMessage(for: text) {
+            fullMessages.append(ctx)
+            lastRecallCount = hits.count
+        } else {
+            lastRecallCount = 0
+        }
+        fullMessages.append(ChatMessage(role: "user", content: text))
+
+        // Streaming assistant bubble — fills token-by-token at the model's real speed.
+        let assistant = ChatMessage(role: "assistant", content: "")
+        chat.append(assistant)
+        let msgId = assistant.id
+        func writeBack(_ s: String) {
+            if let i = chat.lastIndex(where: { $0.id == msgId }) { chat[i].content = s }
+        }
+        var acc = ""
         do {
-            var fullMessages = route.formattedMessages
-            // entheai memory (preview): recall relevant past spans as context.
-            if memoryEnabled, let (ctx, hits) = memory.contextMessage(for: text) {
-                fullMessages.append(ctx)
-                lastRecallCount = hits.count
-            } else {
-                lastRecallCount = 0
+            for try await piece in osaurus.chatStream(model: selectedModel, messages: fullMessages) {
+                acc += piece
+                writeBack(acc)
             }
-            fullMessages.append(ChatMessage(role: "user", content: text))
-            let reply = try await osaurus.chat(model: selectedModel, messages: fullMessages)
-            chat.append(ChatMessage(role: "assistant", content: reply))
-            voice.speak(reply)   // spoken aloud when the speaker toggle is on
+            if acc.isEmpty { writeBack("(no content)") }
+            voice.speak(acc)   // spoken aloud when the speaker toggle is on
             // Keep the past raw — record the exchange for future recall.
             if memoryEnabled {
                 memory.record(kind: "user", text: text)
-                memory.record(kind: "assistant", text: reply)
+                memory.record(kind: "assistant", text: acc)
             }
         } catch {
-            chat.append(ChatMessage(role: "assistant", content: "⚠️ \(error.localizedDescription)"))
+            writeBack(acc.isEmpty ? "⚠️ \(error.localizedDescription)" : acc + "\n\n⚠️ \(error.localizedDescription)")
         }
     }
 

@@ -12,6 +12,9 @@ maps those gems to concrete integrations. 🜂 *ahogy a dolgok vannak.*
   space.* On-device raw span store + lexical recall mirroring entheai's `NativeMesh`
   scorer (distinct query-term overlap). Wired into chat (recall-inject + record-raw),
   Run-toolbar toggle, Settings. Verified end-to-end. No model, no network, no telemetry.
+- **v0.6.0 — Streaming chat.** Replies fill token-by-token at the model's real
+  tokens/sec (OpenAI-compatible SSE via `OsaurusClient.chatStream`) instead of
+  blocking on the whole answer — the point of local inference, made visible.
 - **v0.5.0 — Voice (preview).** On-device speech, Apple-native: TTS speaks replies
   (`AVSpeechSynthesizer`), STT dictates prompts forced on-device (`SFSpeechRecognizer`
   `requiresOnDeviceRecognition`). `Sources/HFMac/VoiceEngine.swift`; mic + speaker in the

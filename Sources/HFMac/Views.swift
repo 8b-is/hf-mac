@@ -421,7 +421,8 @@ struct RunView: View {
                             ChatBubbleView(message: m)
                                 .id(m.id)
                         }
-                        if state.generating {
+                        // "thinking" only until the first streamed token lands
+                        if state.generating, (state.chat.last?.content.isEmpty ?? true) {
                             HStack(spacing: 8) {
                                 ProgressView().controlSize(.small)
                                 Text("thinking (\(state.activeDomain.rawValue))…").font(.caption).foregroundStyle(.secondary)

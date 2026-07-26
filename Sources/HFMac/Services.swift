@@ -226,6 +226,44 @@ struct OsaurusClient: Sendable {
         return (msg?["content"] as? String) ?? "(no content)"
     }
 
+    /// Streaming chat — yields content deltas as the model generates them
+    /// (OpenAI-compatible SSE). Lets the UI fill token-by-token at the model's
+    /// real tokens/sec instead of blocking on the whole reply.
+    func chatStream(model: String, messages: [ChatMessage]) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    var r = req("/v1/chat/completions", method: "POST")
+                    r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    r.httpBody = try JSONSerialization.data(withJSONObject: [
+                        "model": model,
+                        "messages": messages.map { ["role": $0.role, "content": $0.content] },
+                        "stream": true,
+                    ])
+                    let (bytes, resp) = try await URLSession.shared.bytes(for: r)
+                    guard let http = resp as? HTTPURLResponse else { throw OsaurusError.invalidResponse }
+                    guard http.statusCode == 200 else { throw OsaurusError.httpError(http.statusCode) }
+                    for try await line in bytes.lines {
+                        guard line.hasPrefix("data:") else { continue }
+                        let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+                        if payload == "[DONE]" { break }
+                        guard let d = payload.data(using: .utf8),
+                              let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                              let choices = obj["choices"] as? [[String: Any]],
+                              let delta = choices.first?["delta"] as? [String: Any],
+                              let piece = delta["content"] as? String, !piece.isEmpty
+                        else { continue }
+                        continuation.yield(piece)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
     /// Best-effort Ollama-style pull. Returns the HTTP status line for honesty.
     func pull(_ model: String) async throws -> String {
         var r = req("/api/pull", method: "POST")
