@@ -189,8 +189,28 @@
         </div>
       </div>
 
-      <!-- Showcase Row 3: Menu Bar -->
+      <!-- Showcase Row 3: MoE Optimizer Showcase -->
       <div class="showcase-row">
+        <div class="showcase-content">
+          <span class="badge-pill">🧠 Intelligent Routing</span>
+          <h3>MoE Optimizer Layer</h3>
+          <p>
+            Zero-latency prompt intent classification directly inside the Swift app. Automatically detects code, math/reasoning, summarization, or creative prompts and routes them to specialized local models.
+          </p>
+          <ul class="showcase-list">
+            <li><span>✓</span> <strong>Code Expert:</strong> Swift, Rust, Python, HTML formatting</li>
+            <li><span>✓</span> <strong>Reasoning & Math Expert:</strong> Step-by-step logic framing</li>
+            <li><span>✓</span> <strong>Summarization & Creative Experts:</strong> Domain system prompts</li>
+            <li><span>✓</span> <strong>Dynamic Model Router:</strong> Matches active Osaurus model capabilities</li>
+          </ul>
+        </div>
+        <div class="showcase-img-wrap">
+          <img src="assets/images/architecture_diagram.png" alt="MoE Optimizer Intent Classification & Routing" width="600" height="600" loading="lazy">
+        </div>
+      </div>
+
+      <!-- Showcase Row 4: Menu Bar -->
+      <div class="showcase-row reverse">
         <div class="showcase-content">
           <span class="badge-pill">Always Accessible</span>
           <h3>Menu Bar Agent Assistant</h3>
@@ -222,6 +242,7 @@
         <div class="tabs-header" id="quickstart">
           <button class="tab-btn active" data-tab="quickstart" id="tab-btn-quickstart">Quick Start</button>
           <button class="tab-btn" data-tab="architecture" id="tab-btn-architecture">Codebase Architecture</button>
+          <button class="tab-btn" data-tab="moe" id="tab-btn-moe">MoE Optimizer</button>
           <button class="tab-btn" data-tab="keychain" id="tab-btn-keychain">Keychain & Security</button>
           <button class="tab-btn" data-tab="xcode" id="tab-btn-xcode">Build in Xcode</button>
           <button class="tab-btn" data-tab="publishing" id="tab-btn-publishing">DMG & App Store</button>
@@ -307,7 +328,37 @@ swift run</code>
           </div>
         </div>
 
-        <!-- Tab 3: Security & Keychain -->
+        <!-- Tab 3: MoE Optimizer -->
+        <div class="tab-content" id="tab-moe">
+          <h3>Mixture of Experts (MoE) Intent Classifier &amp; Router</h3>
+          <p>The <code>MoEOptimizer</code> module (<code>Sources/HFMac/MoEOptimizer.swift</code>) performs on-device intent classification before sending prompts to your local Osaurus server. It evaluates user input across five domain experts:</p>
+          
+          <ul class="showcase-list" style="margin-top: 16px;">
+            <li><span>⚡</span> <strong>Code Expert:</strong> Injects software engineering system prompts and routes to <code>coder</code>/<code>qwen</code> models.</li>
+            <li><span>📐</span> <strong>Reasoning &amp; Math Expert:</strong> Formats step-by-step reasoning instructions and routes to <code>reasoning</code>/<code>r1</code> models.</li>
+            <li><span>📝</span> <strong>Summarization Expert:</strong> Formats actionable bullet-point extraction instructions.</li>
+            <li><span>🎨</span> <strong>Creative Writing Expert:</strong> Enhances creative storytelling and drafting prompts.</li>
+            <li><span>🧠</span> <strong>General Expert:</strong> High-throughput, concise general responses.</li>
+          </ul>
+          
+          <h3 style="margin-top: 24px;">How it Works</h3>
+          <div class="code-block">
+            <div class="code-header">
+              <span>SWIFT — MoEOptimizer.swift</span>
+              <button class="copy-btn">Copy</button>
+            </div>
+            <code>let route = MoEOptimizer.optimize(
+    prompt: text,
+    chatHistory: chat,
+    availableModels: osaurusModels
+)
+// route.domain → classified ExpertDomain
+// route.recommendedModelID → auto-routed Osaurus model
+// route.formattedMessages → messages with expert system framing</code>
+          </div>
+        </div>
+
+        <!-- Tab 4: Security & Keychain -->
         <div class="tab-content" id="tab-keychain">
           <h3>Keychain & Entitlements Security</h3>
           <p>The app holds two secrets — your Hugging Face token and the optional Osaurus key — in the system Keychain via macOS <code>Security.framework</code> (<code>kSecClassGenericPassword</code>, service <code>hf.app</code>). Never written to disk in the clear. Full policy: <a href="https://github.com/8b-is/hf-mac/blob/main/SECURITY.md" target="_blank" rel="noopener" style="color: var(--hf-yellow);">SECURITY.md</a>.</p>
@@ -330,7 +381,7 @@ swift run</code>
           </div>
         </div>
 
-        <!-- Tab 4: Build in Xcode -->
+        <!-- Tab 5: Build in Xcode -->
         <div class="tab-content" id="tab-xcode">
           <h3>Build &amp; run in Xcode</h3>
           <p>The Xcode project is generated from <code>project.yml</code> (<a href="https://github.com/yonaskolb/XcodeGen" target="_blank" rel="noopener" style="color: var(--hf-yellow);">XcodeGen</a>) over the same <code>Sources/HFMac</code> — the <code>.xcodeproj</code> is git-ignored, so <code>project.yml</code> is the source of truth. Generate it, then open:</p>
@@ -346,7 +397,7 @@ open HFMac.xcodeproj       # ⌘R to run · Product ▸ Archive to package</code
           <p>Press <strong>⌘R</strong> to run, or <strong>Product ▸ Archive</strong> for a release build. The shared <code>HFMac</code> scheme is what both Xcode and Xcode Cloud use. Signing is automatic (Team <code>7CFQYBX575</code>); for an unsigned local build add <code>CODE_SIGNING_ALLOWED=NO</code> to an <code>xcodebuild</code> invocation.</p>
         </div>
 
-        <!-- Tab 5: Publishing -->
+        <!-- Tab 6: Publishing -->
         <div class="tab-content" id="tab-publishing">
           <h3>Ship it — notarized DMG &amp; the Mac App Store</h3>
           <p>Two tracks, one codebase. Full runbook: <a href="https://github.com/8b-is/hf-mac/blob/main/APP_STORE.md" target="_blank" rel="noopener" style="color: var(--hf-yellow);">APP_STORE.md</a> · <a href="https://github.com/8b-is/hf-mac/blob/main/PUBLISHING.md" target="_blank" rel="noopener" style="color: var(--hf-yellow);">PUBLISHING.md</a>.</p>
