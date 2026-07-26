@@ -238,6 +238,24 @@ p {
   margin-bottom: 60px;
 }
 
+.hero-meta {
+  margin: -40px auto 56px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.hero-meta strong { color: var(--hf-yellow); }
+
+.hero-meta a {
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border-highlight);
+  transition: var(--transition);
+}
+
+.hero-meta a:hover { color: var(--hf-yellow); }
+
 .hero-visual {
   position: relative;
   max-width: 1000px;

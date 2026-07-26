@@ -63,13 +63,20 @@
       </p>
       
       <div class="hero-actions">
-        <a href="https://github.com/8b-is/hf-mac/releases" class="btn btn-primary" target="_blank" rel="noopener">
-          Download latest DMG
+        <a href="https://github.com/8b-is/hf-mac/releases/latest" class="btn btn-primary" target="_blank" rel="noopener">
+          ⬇ Download for macOS
         </a>
         <a href="#quickstart" class="btn btn-secondary">
-          Run via SwiftPM
+          Quick Start
+        </a>
+        <a href="https://github.com/8b-is/hf-mac" class="btn btn-secondary" target="_blank" rel="noopener">
+          View Source
         </a>
       </div>
+      <p class="hero-meta">
+        <a href="https://github.com/8b-is/hf-mac/releases/download/v0.1.0/hf-mac-v0.1.0.dmg"><strong>v0.1.0</strong></a>
+        · notarized &amp; stapled · Apple Silicon &amp; Intel · macOS 14 Sonoma+
+      </p>
 
       <div class="hero-visual">
         <img src="assets/images/readme_hero.png" alt="hf.app Widescreen Flagship Header Visual" width="1000" height="600" loading="eager">
@@ -179,32 +186,32 @@
         </div>
 
         <!-- Tabs Navigation -->
-        <div class="tabs-header">
+        <div class="tabs-header" id="quickstart">
           <button class="tab-btn active" data-tab="quickstart" id="tab-btn-quickstart">Quick Start</button>
           <button class="tab-btn" data-tab="architecture" id="tab-btn-architecture">Codebase Architecture</button>
           <button class="tab-btn" data-tab="keychain" id="tab-btn-keychain">Keychain & Security</button>
+          <button class="tab-btn" data-tab="xcode" id="tab-btn-xcode">Build in Xcode</button>
           <button class="tab-btn" data-tab="publishing" id="tab-btn-publishing">DMG & App Store</button>
         </div>
 
         <!-- Tab 1: Quick Start -->
         <div class="tab-content active" id="tab-quickstart">
-          <h3>Running hf.app locally</h3>
-          <p>Make sure you have Xcode Command Line Tools installed and Osaurus running on <code>localhost:1337</code>.</p>
-          
+          <h3>Install in under a minute</h3>
+          <p><strong>1 · Get the app.</strong> Download the <a href="https://github.com/8b-is/hf-mac/releases/latest" target="_blank" rel="noopener" style="color: var(--hf-yellow);">latest&nbsp;.dmg</a>, open it, and drag <strong>hf.app</strong> into Applications. It's Developer-ID signed &amp; notarized, so it opens with no Gatekeeper warning — no <code>xattr</code> dance.</p>
+          <p><strong>2 · Get the engine.</strong> Install <a href="https://github.com/osaurus-ai/osaurus" target="_blank" rel="noopener" style="color: var(--hf-yellow);">Osaurus</a> and start it on <code>localhost:1337</code>. hf.app is the thin front-end; Osaurus owns the weights, MLX, and serving.</p>
+          <p><strong>3 · Pull &amp; run.</strong> Pull a model in Osaurus (Llama, Qwen, Phi…), then hit <strong>Refresh</strong> in the <em>Run</em> tab of hf.app. Real tokens/sec, fully on-device — your HF token stays in the macOS Keychain.</p>
+
+          <h3 style="margin-top: 32px;">Run from source (developers)</h3>
+          <p>Needs the Xcode Command Line Tools. Builds with SwiftPM — no Xcode project required:</p>
           <div class="code-block">
             <div class="code-header">
               <span>BASH</span>
               <button class="copy-btn">Copy</button>
             </div>
-            <code># 1. Clone the repository
-git clone https://github.com/8b-is/hf-mac.git
+            <code>git clone https://github.com/8b-is/hf-mac.git
 cd hf-mac
-
-# 2. Run with SwiftPM
 swift run</code>
           </div>
-
-          <p><strong>Prerequisites:</strong> Launch <a href="https://github.com/osaurus-ai/osaurus" target="_blank" style="color: var(--hf-yellow);">Osaurus</a> on localhost:1337, pull your favorite model (e.g., Llama, Qwen, Phi), then click <strong>Refresh</strong> in the Run tab of hf.app.</p>
         </div>
 
         <!-- Tab 2: Codebase Architecture -->
@@ -250,20 +257,38 @@ swift run</code>
           </div>
         </div>
 
-        <!-- Tab 4: Publishing -->
-        <div class="tab-content" id="tab-publishing">
-          <h3>Notarized DMG & Mac App Store Packaging</h3>
-          <p>Automated building and Developer-ID notarization runs on every tag push via GitHub Actions (<code>release.yml</code>). Check out <a href="https://github.com/8b-is/hf-mac/blob/main/CONTRIBUTING.md" target="_blank" style="color: var(--hf-yellow);">CONTRIBUTING.md</a> to participate!</p>
-          
+        <!-- Tab 4: Build in Xcode -->
+        <div class="tab-content" id="tab-xcode">
+          <h3>Build &amp; run in Xcode</h3>
+          <p>The Xcode project is generated from <code>project.yml</code> (<a href="https://github.com/yonaskolb/XcodeGen" target="_blank" rel="noopener" style="color: var(--hf-yellow);">XcodeGen</a>) over the same <code>Sources/HFMac</code> — the <code>.xcodeproj</code> is git-ignored, so <code>project.yml</code> is the source of truth. Generate it, then open:</p>
           <div class="code-block">
             <div class="code-header">
-              <span>RELEASE COMMAND</span>
+              <span>BASH</span>
               <button class="copy-btn">Copy</button>
             </div>
-            <code># Tag release to trigger Notarized DMG build workflow
-git tag v0.1.0
-git push --tags</code>
+            <code>brew install xcodegen     # once
+xcodegen generate         # writes HFMac.xcodeproj
+open HFMac.xcodeproj       # ⌘R to run · Product ▸ Archive to package</code>
           </div>
+          <p>Press <strong>⌘R</strong> to run, or <strong>Product ▸ Archive</strong> for a release build. The shared <code>HFMac</code> scheme is what both Xcode and Xcode Cloud use. Signing is automatic (Team <code>7CFQYBX575</code>); for an unsigned local build add <code>CODE_SIGNING_ALLOWED=NO</code> to an <code>xcodebuild</code> invocation.</p>
+        </div>
+
+        <!-- Tab 5: Publishing -->
+        <div class="tab-content" id="tab-publishing">
+          <h3>Ship it — notarized DMG &amp; the Mac App Store</h3>
+          <p>Two tracks, one codebase. Full runbook: <a href="https://github.com/8b-is/hf-mac/blob/main/APP_STORE.md" target="_blank" rel="noopener" style="color: var(--hf-yellow);">APP_STORE.md</a> · <a href="https://github.com/8b-is/hf-mac/blob/main/PUBLISHING.md" target="_blank" rel="noopener" style="color: var(--hf-yellow);">PUBLISHING.md</a>.</p>
+
+          <p><strong>① Developer-ID DMG</strong> (OSS / direct download). Push a <code>v*</code> tag and GitHub Actions builds → Developer-ID signs → <strong>notarizes + staples</strong> → cuts a Release. Runs on <a href="https://blacksmith.sh" target="_blank" rel="noopener" style="color: var(--hf-yellow);">Blacksmith</a> Apple-Silicon runners.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>RELEASE — TAG TO SHIP</span>
+              <button class="copy-btn">Copy</button>
+            </div>
+            <code>git tag v0.1.0
+git push --tags      # → notarized .dmg on Releases</code>
+          </div>
+
+          <p><strong>② Mac App Store / TestFlight</strong> via <strong>Xcode Cloud</strong> with Apple-managed signing — no manual certs. The app record is live: <code>hf.app</code>, Apple&nbsp;ID <code>6794829098</code>. Open the generated project, choose <em>Product ▸ Xcode Cloud</em>, pick the <code>HFMac</code> scheme, and archive → TestFlight. The <code>ci_scripts/</code> hooks regenerate the project and stamp the build number automatically.</p>
         </div>
 
       </div>
