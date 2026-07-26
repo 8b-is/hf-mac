@@ -28,11 +28,13 @@ Prerequisites: an **Apple Developer Program** membership (the org or your indivi
 account) and all Agreements/Tax/Banking accepted in ASC — a "Paid Apps" or "Free Apps"
 agreement in *Pending* state silently blocks submission.
 
-> **Status (checked via ASC API 2026-07-26):** the **Identifier** `dev.peterl.hfmac` is
-> ✅ registered (Team **`7CFQYBX575`**, UNIVERSAL) — step 1 done. The **app record**
-> (step 2) is ⛔ **not created yet**; that's the one remaining store gate. Steps 1 and 2
-> are different things — the Identifier lives in developer.apple.com, the app record in
-> appstoreconnect.apple.com → Apps.
+> **Status (ASC API, 2026-07-26):** ✅ Identifier `dev.peterl.hfmac` registered
+> (Team **`7CFQYBX575`**, UNIVERSAL) · ✅ **app record created** — **hf.app**, Apple ID
+> **`6794829098`**, SKU `hfmac`. The repo's `NOTARY_*` secrets now use a **dedicated ASC
+> API key** (`74NG9T9MHA`), verified for both `notarytool` and the ASC API. Steps 1–3
+> below are **done**. The only remaining store gates are interactive (§B): install the
+> Xcode Cloud GitHub App on `8b-is`, then create the Xcode Cloud workflow on the `HFMac`
+> scheme. (Blacksmith is independent — it only speeds the DMG track.)
 
 1. **Register the App ID.** [developer.apple.com](https://developer.apple.com/account) →
    Certificates, IDs & Profiles → Identifiers → **+** → App ID → App → Bundle ID
