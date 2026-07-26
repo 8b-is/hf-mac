@@ -28,6 +28,12 @@ Prerequisites: an **Apple Developer Program** membership (the org or your indivi
 account) and all Agreements/Tax/Banking accepted in ASC — a "Paid Apps" or "Free Apps"
 agreement in *Pending* state silently blocks submission.
 
+> **Status (checked via ASC API 2026-07-26):** the **Identifier** `dev.peterl.hfmac` is
+> ✅ registered (Team **`7CFQYBX575`**, UNIVERSAL) — step 1 done. The **app record**
+> (step 2) is ⛔ **not created yet**; that's the one remaining store gate. Steps 1 and 2
+> are different things — the Identifier lives in developer.apple.com, the app record in
+> appstoreconnect.apple.com → Apps.
+
 1. **Register the App ID.** [developer.apple.com](https://developer.apple.com/account) →
    Certificates, IDs & Profiles → Identifiers → **+** → App ID → App → Bundle ID
    **explicit** `dev.peterl.hfmac`. Capabilities: App Sandbox needs no toggle here
@@ -97,7 +103,7 @@ it's the recommended store path over the `mas.yml` scaffold.
 xcodegen generate
 xcodebuild -project HFMac.xcodeproj -scheme HFMac -configuration Release \
   -destination 'generic/platform=macOS' archive \
-  -archivePath build/HFMac.xcarchive DEVELOPMENT_TEAM=YOURTEAMID
+  -archivePath build/HFMac.xcarchive DEVELOPMENT_TEAM=7CFQYBX575   # your Apple Team ID
 ```
 > Unsigned compile sanity check (no team needed):
 > `xcodebuild -project HFMac.xcodeproj -scheme HFMac build CODE_SIGNING_ALLOWED=NO`
