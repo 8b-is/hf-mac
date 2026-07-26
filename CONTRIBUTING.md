@@ -27,7 +27,7 @@ We aim to build an inclusive, respectful, and welcoming open-source community. P
 1. **macOS 14.0+** (Sonoma or later) on Apple Silicon (recommended) or Intel.
 2. **Xcode 15.0+** or Xcode Command Line Tools (`xcode-select --install`).
 3. **Swift 5.9+** toolchain.
-4. **[Osaurus](https://github.com/dinoki-ai/osaurus)** running locally on `localhost:1337`.
+4. **[Osaurus](https://github.com/osaurus-ai/osaurus)** running locally on `localhost:1337`.
 
 ### Getting Started
 ```bash

@@ -9,7 +9,7 @@
 [![Security Policy](https://img.shields.io/badge/Security-Policy-06B6D4?logo=shield&logoColor=white)](SECURITY.md)
 [![Contributing](https://img.shields.io/badge/Contributions-Welcome-8B5CF6?logo=github&logoColor=white)](CONTRIBUTING.md)
 
-Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/dinoki-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. `hf.app` is the thin, honest native front-end — Osaurus owns the weights, MLX, and serving.
+Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/osaurus-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. `hf.app` is the thin, honest native front-end — Osaurus owns the weights, MLX, and serving.
 
 🌐 **Official Web Site & Documentation:** [https://8b-is.github.io/hf-mac/](https://8b-is.github.io/hf-mac/)
 
@@ -62,7 +62,7 @@ Most AI desktop applications suffer from bloated electron wrappers, bundled Pyth
 ### Minimum Requirements
 - **Operating System**: macOS 14.0 (Sonoma) or later.
 - **Processor**: Apple Silicon (M1/M2/M3/M4) or Intel Mac with dedicated Metal GPU.
-- **Local Engine**: [Osaurus](https://github.com/dinoki-ai/osaurus) running on `localhost:1337`.
+- **Local Engine**: [Osaurus](https://github.com/osaurus-ai/osaurus) running on `localhost:1337`.
 
 ### Recommended Memory Allocation for Local Models
 
@@ -144,7 +144,7 @@ open Package.swift
 
 `hf.app` relies on **Osaurus** for local model serving:
 
-1. Download and launch **[Osaurus](https://github.com/dinoki-ai/osaurus)** on your Mac.
+1. Download and launch **[Osaurus](https://github.com/osaurus-ai/osaurus)** on your Mac.
 2. Ensure Osaurus is listening on `http://localhost:1337`.
 3. Pull your desired model inside Osaurus (e.g. `llama3:8b`).
 4. Click **Refresh** in the **Run** tab of `hf.app` to instantly sync available local models.

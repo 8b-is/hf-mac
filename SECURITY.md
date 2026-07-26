@@ -10,7 +10,7 @@ At **`hf.app`**, security, data privacy, and user sovereignty are fundamental ar
 
 ### 1. Zero External Telemetry & Local Execution
 - **Zero Tracking**: `hf.app` contains no telemetry, product analytics, crash reporting trackers, or diagnostic telemetry.
-- **Local Engine Binding**: All local LLM inference occurs strictly via `localhost:1337` communicating with [Osaurus](https://github.com/dinoki-ai/osaurus). No prompts or chat histories leave your local machine.
+- **Local Engine Binding**: All local LLM inference occurs strictly via `localhost:1337` communicating with [Osaurus](https://github.com/osaurus-ai/osaurus). No prompts or chat histories leave your local machine.
 
 ### 2. macOS App Sandbox & Entitlements
 `hf.app` strictly adheres to Apple's macOS App Sandbox security controls defined in [`Packaging/hf-mac.entitlements`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Packaging/hf-mac.entitlements):
