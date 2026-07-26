@@ -321,7 +321,7 @@ struct RunView: View {
                     .font(.system(.subheadline, design: .monospaced))
                     .foregroundStyle(Theme.dim)
                 Picker("", selection: $s.selectedModel) { ForEach(state.osaurusModels) { Text($0.id).tag($0.id) } }
-                    .labelsHidden().frame(maxWidth: 280)
+                    .labelsHidden().frame(maxWidth: 240)
                 Button { Task { await state.refreshOsaurus() } } label: { Image(systemName: "arrow.clockwise") }
                     .help("Refresh local Osaurus models (⌘R)")
                     .keyboardShortcut("r", modifiers: [.command])
@@ -333,6 +333,31 @@ struct RunView: View {
                 }
 
                 Spacer()
+
+                // MoE Optimizer Badge
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.caption2)
+                        .foregroundStyle(state.moeEnabled ? Theme.accent : Theme.dim)
+                    Toggle("MoE Router", isOn: $s.moeEnabled)
+                        .toggleStyle(.switch)
+                        .controlSize(.mini)
+                }
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(Theme.glassMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(state.moeEnabled ? Theme.glassBorderHighlight : Theme.glassBorder))
+
+                if state.moeEnabled {
+                    HStack(spacing: 4) {
+                        Image(systemName: state.activeDomain.icon)
+                            .font(.caption2)
+                        Text(state.activeDomain.rawValue)
+                            .font(.system(.caption2, design: .monospaced))
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .foregroundStyle(Theme.accent)
+                    .background(Theme.accent.opacity(0.12), in: Capsule())
+                }
 
                 if !state.osaurusReachable {
                     Button("Retry Connection") { Task { await state.refreshOsaurus() } }
@@ -373,7 +398,7 @@ struct RunView: View {
                         if state.generating {
                             HStack(spacing: 8) {
                                 ProgressView().controlSize(.small)
-                                Text("thinking…").font(.caption).foregroundStyle(.secondary)
+                                Text("thinking (\(state.activeDomain.rawValue))…").font(.caption).foregroundStyle(.secondary)
                             }
                             .padding(10)
                             .background(Theme.glassMaterial, in: Capsule())
@@ -457,6 +482,11 @@ struct SettingsView: View {
             Section("Osaurus (local inference)") {
                 SecureField("API key (if Osaurus requires one)", text: $s.osaurusKey)
                 Text("Only needed if Osaurus has auth enabled. Talks to localhost:1337.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Mixture of Experts (MoE)") {
+                Toggle("Enable MoE Intent Classifier & Auto-Router", isOn: $s.moeEnabled)
+                Text("Automatically detects code, math, summary, or creative prompts and routes to specialized local models.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if let note = state.settingsSavedNote {

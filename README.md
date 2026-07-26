@@ -50,6 +50,7 @@ Most AI desktop applications suffer from bloated electron wrappers, bundled Pyth
 | ⚡ **Apple Silicon Native** | Built with pure Swift 5.9 and SwiftUI for macOS 14.0+, leveraging M1/M2/M3/M4 unified memory for maximum token throughput. |
 | 🤗 **Live HF Hub Explorer** | Search millions of open-weight models directly from Hugging Face REST APIs with live metadata, model tags, and pull triggers. |
 | 🜂 **Dual Native macOS UI** | Work in a standard desktop application window (`WindowGroup`) or invoke the lightweight menu-bar quick assistant (`MenuBarExtra`) anytime. |
+| 🧠 **MoE Optimizer Layer** | Automatically classifies prompt intent (Code, Math & Reasoning, Summarization, Creative) and routes to specialized local models with expert system prompts. |
 | 🔐 **Keychain Token Isolation** | Securely encrypt and store Hugging Face User Access Tokens in the system macOS Keychain using `Security.framework`. |
 | 🌐 **Offline First** | Once local models are pulled into Osaurus, chat and prompt inference operate completely offline with no network requirement. |
 
@@ -81,13 +82,13 @@ Most AI desktop applications suffer from bloated electron wrappers, bundled Pyth
 The system loop follows a clear 4-step pipeline:
 
 ```
-Browse HF Hub  →  Pull to Osaurus  →  Run & Chat Locally (Private)  →  Manage Models
+Browse HF Hub  →  Pull to Osaurus  →  MoE Auto-Route & Optimize  →  Run & Chat Locally (Private)
 ```
 
 1. **Browse**: `HubClient` queries the Hugging Face REST API (`api-inference.huggingface.co`) for model cards, tags, and creator metadata.
 2. **Pull**: Model weights are downloaded and cached by **Osaurus** into unified memory.
-3. **Run**: `OsaurusClient` streams OpenAI-compatible `/v1/chat/completions` JSON responses to SwiftUI views.
-4. **Chat**: Text generation streams in real time both in the main workspace window and the floating menu-bar agent.
+3. **MoE Optimize**: `MoEOptimizer` classifies prompt intent into domain experts (Code, Reasoning, Summary, Creative) and selects the best local model.
+4. **Run & Chat**: `OsaurusClient` streams OpenAI-compatible `/v1/chat/completions` JSON responses to SwiftUI glass components.
 
 ---
 
@@ -100,16 +101,18 @@ The codebase is organized into clean, single-responsibility Swift modules:
 ```
 Sources/HFMac/
 ├── HFMacApp.swift      # @main App entry point, WindowGroup & MenuBarExtra setup
+├── MoEOptimizer.swift  # Mixture of Experts intent classifier & dynamic model router
 ├── Services.swift      # HubClient (HF Hub REST) & OsaurusClient (OpenAI /v1 API)
 ├── Views.swift         # SwiftUI view hierarchy (Browse, Run, Your Models, MenuBar agent)
 ├── Keychain.swift      # Security.framework wrapper for HF tokens
 ├── OfflineStore.swift   # Local persistence & cached model state
-├── WebView.swift       # WKWebView bridge for interactive model cards
-└── Theme.swift         # Modern macOS dark mode tokens & styling constants
+├── WebView.swift       # WKWebView bridge for interactive model cards & Spaces
+└── Theme.swift         # Modern macOS dark glass mode tokens & styling constants
 ```
 
 ### Key Modules
 
+- [`MoEOptimizer.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/MoEOptimizer.swift): Implements domain classification (`ExpertDomain`) and intelligent expert model routing.
 - [`Services.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Services.swift): Contains `HubClient` for Hugging Face REST search and `OsaurusClient` for local OpenAI-compatible endpoint communication.
 - [`HFMacApp.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/HFMacApp.swift): The main application definition managing reactive `@Observable AppState`.
 - [`Views.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Views.swift): Defines SwiftUI components for browsing, chatting, model management, and the floating menu-bar quick agent.

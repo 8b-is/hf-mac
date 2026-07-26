@@ -57,6 +57,10 @@ final class AppState {
     var osaurusReachable = true
     var osaurusNote: String?
 
+    // MoE Optimizer Layer
+    var moeEnabled = true
+    var activeDomain: ExpertDomain = .general
+
     // Credentials (Keychain)
     var hfToken = ""
     var osaurusKey = ""
@@ -164,10 +168,24 @@ final class AppState {
         let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !generating, !text.isEmpty, !selectedModel.isEmpty else { return }
         generating = true; defer { generating = false }
+
+        let route: MoERouteResult
+        if moeEnabled {
+            route = MoEOptimizer.optimize(prompt: text, chatHistory: chat, availableModels: osaurusModels)
+            activeDomain = route.domain
+            if let best = route.recommendedModelID, osaurusModels.contains(where: { $0.id == best }) {
+                selectedModel = best
+            }
+        } else {
+            route = MoERouteResult(domain: .general, recommendedModelID: selectedModel, formattedMessages: chat)
+        }
+
         chat.append(ChatMessage(role: "user", content: text))
         prompt = ""
         do {
-            let reply = try await osaurus.chat(model: selectedModel, messages: chat)
+            var fullMessages = route.formattedMessages
+            fullMessages.append(ChatMessage(role: "user", content: text))
+            let reply = try await osaurus.chat(model: selectedModel, messages: fullMessages)
             chat.append(ChatMessage(role: "assistant", content: reply))
         } catch {
             chat.append(ChatMessage(role: "assistant", content: "⚠️ \(error.localizedDescription)"))
