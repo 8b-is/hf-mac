@@ -10,18 +10,20 @@ struct HFMacApp: App {
         WindowGroup {
             ContentView()
                 .environment(state)
+                .tint(Theme.accent)
+                .preferredColorScheme(.dark)
                 .frame(minWidth: 900, minHeight: 600)
                 .task { await state.bootstrap() }
         }
         .defaultSize(width: 1140, height: 760)
 
         MenuBarExtra("hf", systemImage: "brain.head.profile") {
-            MenuBarView().environment(state)
+            MenuBarView().environment(state).tint(Theme.accent).preferredColorScheme(.dark)
         }
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView().environment(state)
+            SettingsView().environment(state).tint(Theme.accent).preferredColorScheme(.dark)
         }
     }
 }

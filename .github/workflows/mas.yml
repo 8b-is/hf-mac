@@ -1,0 +1,58 @@
+name: mac-app-store
+# SCAFFOLD — Mac App Store submission. Needs certs/profile that DON'T exist yet
+# (see PUBLISHING.md #2). Manual-only until the App Store Connect app record and
+# the MAS certs + provisioning profile are created. Then fill in these secrets:
+#
+#   MAS_APP_CERT        base64 "Apple Distribution" .p12
+#   MAS_APP_CERT_PWD    its password
+#   MAS_INSTALLER_CERT  base64 "Mac Installer Distribution" .p12
+#   MAS_INSTALLER_PWD   its password
+#   MAS_PROFILE         base64 of the Mac App Store .provisionprofile
+#   MAS_APP_IDENTITY    e.g. "Apple Distribution: Peter Lodri (TEAMID)"
+#   MAS_INSTALLER_IDENTITY  e.g. "3rd Party Mac Developer Installer: Peter Lodri (TEAMID)"
+#   NOTARY_KEY / NOTARY_KEY_ID / NOTARY_ISSUER_ID   (App Store Connect API key, for altool upload)
+#   KEYCHAIN_PWD
+on:
+  workflow_dispatch:
+
+jobs:
+  mas:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard — require MAS secrets
+        run: |
+          : "${{ secrets.MAS_APP_CERT }}" "${{ secrets.MAS_PROFILE }}"
+          if [ -z "${{ secrets.MAS_APP_CERT }}" ]; then
+            echo "::error::MAS certs/profile not configured yet — see PUBLISHING.md #2."; exit 1; fi
+
+      - name: Build + bundle
+        run: |
+          swift build -c release --arch arm64
+          APP="dist/HFMac.app"
+          mkdir -p "$APP/Contents/MacOS"
+          cp .build/arm64-apple-macosx/release/HFMac "$APP/Contents/MacOS/HFMac"
+          cp Packaging/Info.plist "$APP/Contents/Info.plist"
+          echo "${{ secrets.MAS_PROFILE }}" | base64 --decode > "$APP/Contents/embedded.provisionprofile"
+
+      - name: Import MAS certs
+        env: { P12: "${{ secrets.MAS_APP_CERT }}", P12PWD: "${{ secrets.MAS_APP_CERT_PWD }}", INST: "${{ secrets.MAS_INSTALLER_CERT }}", INSTPWD: "${{ secrets.MAS_INSTALLER_PWD }}", KC: "${{ secrets.KEYCHAIN_PWD }}" }
+        run: |
+          security create-keychain -p "$KC" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KC" build.keychain
+          echo "$P12"  | base64 --decode > app.p12  && security import app.p12  -k build.keychain -P "$P12PWD"  -T /usr/bin/codesign
+          echo "$INST" | base64 --decode > inst.p12 && security import inst.p12 -k build.keychain -P "$INSTPWD" -T /usr/bin/productbuild
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KC" build.keychain
+          rm -f app.p12 inst.p12
+
+      - name: Sign + package (.pkg) + upload
+        env: { APP_ID: "${{ secrets.MAS_APP_IDENTITY }}", INST_ID: "${{ secrets.MAS_INSTALLER_IDENTITY }}", KEY: "${{ secrets.NOTARY_KEY }}", KID: "${{ secrets.NOTARY_KEY_ID }}", ISS: "${{ secrets.NOTARY_ISSUER_ID }}" }
+        run: |
+          APP="dist/HFMac.app"
+          codesign --force --options runtime --entitlements Packaging/hf-mac.entitlements --sign "$APP_ID" "$APP"
+          productbuild --component "$APP" /Applications --sign "$INST_ID" dist/hf-mac.pkg
+          echo "$KEY" | base64 --decode > AuthKey.p8
+          xcrun altool --upload-app -f dist/hf-mac.pkg -t macos --apiKey "$KID" --apiIssuer "$ISS"
+          rm -f AuthKey.p8

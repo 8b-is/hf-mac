@@ -31,11 +31,11 @@ struct ContentView: View {
             .navigationSplitViewColumnWidth(min: 160, ideal: 180)
             .safeAreaInset(edge: .bottom) {
                 HStack(spacing: 6) {
-                    Circle().fill(state.osaurusReachable ? .green : .orange).frame(width: 7, height: 7)
+                    Circle().fill(state.osaurusReachable ? Theme.green : Theme.warn).frame(width: 7, height: 7)
                     Text(state.username.map { "@\($0)" } ?? "not signed in")
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(.system(.caption2, design: .monospaced)).foregroundStyle(Theme.dim)
                     Spacer()
-                }.padding(8)
+                }.padding(10)
             }
         } detail: {
             switch tab {
@@ -85,18 +85,25 @@ struct SpaceCard: View {
     let space: HFSpace
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(space.emoji ?? "🚀").font(.system(size: 30))
-            Text(space.name).font(.headline).lineLimit(1)
-            Text(space.owner).font(.caption).foregroundStyle(.secondary)
+            HStack(alignment: .top) {
+                Text(space.emoji ?? "🚀").font(.system(size: 28))
+                Spacer()
+                if OfflineStore.isSpaceDownloaded(space.id) {
+                    Image(systemName: "checkmark.icloud.fill").font(.caption).foregroundStyle(Theme.green)
+                }
+            }
+            Text(space.name).font(.system(.headline, design: .monospaced)).foregroundStyle(Theme.fg).lineLimit(1)
+            Text(space.owner).font(.system(.caption, design: .monospaced)).foregroundStyle(Theme.dim)
+            Spacer(minLength: 0)
             HStack(spacing: 10) {
                 if let sdk = space.sdk { Label(sdk, systemImage: "square.stack.3d.up") }
                 if let l = space.likes { Label(l.formatted(), systemImage: "heart") }
-            }.font(.caption2).foregroundStyle(.secondary)
+            }.font(.system(.caption2, design: .monospaced)).foregroundStyle(Theme.dim)
         }
-        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 128, alignment: .topLeading)
         .padding(14)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.separator))
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.border))
     }
 }
 

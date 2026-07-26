@@ -53,7 +53,8 @@ jobs:
           IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
         run: |
           APP="dist/HFMac.app"
-          codesign --force --options runtime --timestamp --deep --sign "$IDENTITY" "$APP"
+          codesign --force --options runtime --timestamp --deep \
+            --entitlements Packaging/hf-mac.entitlements --sign "$IDENTITY" "$APP"
           codesign --verify --strict --verbose=2 "$APP"
 
       - name: Notarize + staple
