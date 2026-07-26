@@ -12,6 +12,10 @@ maps those gems to concrete integrations. 🜂 *ahogy a dolgok vannak.*
   space.* On-device raw span store + lexical recall mirroring entheai's `NativeMesh`
   scorer (distinct query-term overlap). Wired into chat (recall-inject + record-raw),
   Run-toolbar toggle, Settings. Verified end-to-end. No model, no network, no telemetry.
+- **v0.8.0 — Chat polish.** Replies render markdown with fenced code blocks
+  (streaming-safe — an unclosed fence renders as a growing code block); the view
+  follows the streaming reply as it grows; a **Stop** button (⌘.) cancels a
+  generation mid-stream, keeping whatever streamed so far.
 - **v0.7.0 — Quant/speed awareness.** The Models tab classifies each model by
   on-device speed (`ModelSpeed`: ternary → MLX-4bit → quantized → full) with a
   badge + fast-model presets (MLX 4-bit · BitNet/ternary · GGUF), steering you

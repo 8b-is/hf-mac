@@ -315,6 +315,43 @@ struct ModelsView: View {
 
 // MARK: - Chat Bubble Component
 
+/// Renders text with fenced code blocks + inline markdown. Streaming-safe: an
+/// unclosed ``` fence renders its tail as a (still-growing) code block.
+struct MarkdownText: View {
+    let text: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(Self.segments(text).enumerated()), id: \.offset) { _, seg in
+                if seg.code {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        Text(seg.text)
+                            .font(.system(.callout, design: .monospaced))
+                            .textSelection(.enabled)
+                            .padding(10)
+                    }
+                    .background(Color.black.opacity(0.32), in: RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.glassBorder))
+                } else if !seg.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(Self.inline(seg.text)).textSelection(.enabled)
+                }
+            }
+        }
+    }
+    static func segments(_ s: String) -> [(text: String, code: Bool)] {
+        s.components(separatedBy: "```").enumerated().map { i, part in
+            if i % 2 == 1 {   // between fences → code; drop an optional language line
+                var p = part
+                if let nl = p.firstIndex(of: "\n") { p = String(p[p.index(after: nl)...]) }
+                return (p, true)
+            }
+            return (part, false)
+        }
+    }
+    static func inline(_ s: String) -> AttributedString {
+        (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(s)
+    }
+}
+
 struct ChatBubbleView: View {
     let message: ChatMessage
 
@@ -325,8 +362,7 @@ struct ChatBubbleView: View {
 
         HStack {
             if isUser { Spacer(minLength: 60) }
-            Text(message.content)
-                .textSelection(.enabled)
+            MarkdownText(text: message.content)
                 .padding(12)
                 .background(bg, in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(border))
@@ -465,6 +501,9 @@ struct RunView: View {
                         withAnimation(.easeInOut) { proxy.scrollTo(lastId, anchor: .bottom) }
                     }
                 }
+                .onChange(of: state.chat.last?.content) { _, _ in   // follow the streaming reply
+                    if let lastId = state.chat.last?.id { proxy.scrollTo(lastId, anchor: .bottom) }
+                }
             }
             Divider()
 
@@ -484,7 +523,7 @@ struct RunView: View {
                 TextField("Message the model…", text: $s.prompt, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(1...6)
-                    .onSubmit { Task { await state.send() } }
+                    .onSubmit { state.startSend() }
 
                 // Voice · preview — speak replies aloud
                 Button {
@@ -497,15 +536,22 @@ struct RunView: View {
                 .buttonStyle(.bordered)
                 .help(state.voice.speakReplies ? "Speaking replies aloud — click to mute" : "Speak replies aloud")
 
-                Button {
-                    Task { await state.send() }
-                } label: {
-                    Label("Send", systemImage: "paperplane.fill")
+                if state.generating {
+                    Button(role: .cancel) { state.stopGenerating() } label: {
+                        Label("Stop", systemImage: "stop.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Theme.warn)
+                    .keyboardShortcut(".", modifiers: [.command])
+                } else {
+                    Button { state.startSend() } label: {
+                        Label("Send", systemImage: "paperplane.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.accent)
+                    .disabled(state.selectedModel.isEmpty)
+                    .keyboardShortcut(.return, modifiers: [.command])
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.accent)
-                .disabled(state.generating || state.selectedModel.isEmpty)
-                .keyboardShortcut(.return, modifiers: [.command])
             }
             .padding(14)
             .background(Theme.glassBarMaterial)

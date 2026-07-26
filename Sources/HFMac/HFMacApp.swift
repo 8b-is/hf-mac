@@ -54,6 +54,7 @@ final class AppState {
     var chat: [ChatMessage] = []
     var prompt = ""
     var generating = false
+    var genTask: Task<Void, Never>?
     var osaurusReachable = true
     var osaurusNote: String?
 
@@ -224,9 +225,24 @@ final class AppState {
                 memory.record(kind: "assistant", text: acc)
             }
         } catch {
-            writeBack(acc.isEmpty ? "⚠️ \(error.localizedDescription)" : acc + "\n\n⚠️ \(error.localizedDescription)")
+            if Task.isCancelled || (error as? URLError)?.code == .cancelled {
+                if acc.isEmpty { writeBack("(stopped)") }   // keep whatever streamed so far
+                if memoryEnabled, !acc.isEmpty {
+                    memory.record(kind: "user", text: text)
+                    memory.record(kind: "assistant", text: acc)
+                }
+            } else {
+                writeBack(acc.isEmpty ? "⚠️ \(error.localizedDescription)" : acc + "\n\n⚠️ \(error.localizedDescription)")
+            }
         }
     }
+
+    /// Fire a send as a cancellable task so a Stop button can interrupt a stream.
+    func startSend() {
+        genTask?.cancel()
+        genTask = Task { await send() }
+    }
+    func stopGenerating() { genTask?.cancel() }
 
     func clearChat() {
         chat.removeAll()
