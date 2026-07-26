@@ -75,7 +75,7 @@
       </div>
       <p class="hero-meta">
         <a href="https://github.com/8b-is/hf-mac/releases/download/v0.1.0/hf-mac-v0.1.0.dmg"><strong>v0.1.0</strong></a>
-        · notarized &amp; stapled · Apple Silicon &amp; Intel · macOS 14 Sonoma+
+        · notarized &amp; stapled · Apple Silicon (arm64) · macOS 14 Sonoma+
       </p>
 
       <div class="hero-visual">
@@ -272,7 +272,7 @@ swift run</code>
         <!-- Tab 3: Security & Keychain -->
         <div class="tab-content" id="tab-keychain">
           <h3>Keychain & Entitlements Security</h3>
-          <p>Your Hugging Face API tokens are stored using macOS <code>Security.framework</code> Services inside the system Keychain (<code>dev.peterl.hfmac.token</code>). See our full <a href="https://github.com/8b-is/hf-mac/blob/main/SECURITY.md" target="_blank" style="color: var(--hf-yellow);">SECURITY.md Policy</a>.</p>
+          <p>The app holds two secrets — your Hugging Face token and the optional Osaurus key — in the system Keychain via macOS <code>Security.framework</code> (<code>kSecClassGenericPassword</code>, service <code>hf.app</code>). Never written to disk in the clear. Full policy: <a href="https://github.com/8b-is/hf-mac/blob/main/SECURITY.md" target="_blank" rel="noopener" style="color: var(--hf-yellow);">SECURITY.md</a>.</p>
           
           <div class="code-block">
             <div class="code-header">
