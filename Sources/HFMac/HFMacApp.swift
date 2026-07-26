@@ -58,6 +58,14 @@ final class AppState {
     var hfToken = ""
     var osaurusKey = ""
 
+    // Offline / Articles
+    var offlineSpaces: Set<String> = []
+    var downloadingSpace: String?
+    var downloadNote: String?
+    var articles: [Article] = []
+    var articlesLoading = false
+    private let articleService = ArticleService()
+
     private var hub: HubClient { HubClient(token: hfToken.isEmpty ? nil : hfToken) }
     private var osaurus: OsaurusClient { OsaurusClient(apiKey: osaurusKey.isEmpty ? nil : osaurusKey) }
 
@@ -71,6 +79,8 @@ final class AppState {
             spaceQuery = "PeetPedro"
             await searchSpaces()
         }
+        refreshOffline()
+        await loadArticles()
     }
 
     func searchSpaces() async {
@@ -109,10 +119,39 @@ final class AppState {
         osaurusNote = (try? await osaurus.pull(model)) ?? "pull failed"
     }
 
-    /// Authoritative embed URL for a Space (correct for static vs gradio).
+    /// Authoritative embed URL — prefer an offline snapshot, else the live host.
     func resolveHost(_ space: HFSpace) async -> URL {
-        await hub.spaceHost(space.id) ?? space.embedURL
+        if let local = OfflineStore.spaceIndex(space.id) { return local }
+        return await hub.spaceHost(space.id) ?? space.embedURL
     }
+
+    func refreshOffline() {
+        offlineSpaces = Set(spaces.filter { OfflineStore.isSpaceDownloaded($0.id) }.map(\.id))
+    }
+
+    func downloadSpaceOffline(_ space: HFSpace) async {
+        downloadingSpace = space.id; downloadNote = nil
+        defer { downloadingSpace = nil }
+        do {
+            let n = try await hub.downloadSpace(space.id)
+            downloadNote = "\(space.name): \(n) files cached — playable offline"
+            if OfflineStore.isSpaceDownloaded(space.id) { offlineSpaces.insert(space.id) }
+        } catch {
+            downloadNote = "download failed: \(error.localizedDescription)"
+        }
+    }
+
+    func loadArticles() async {
+        articlesLoading = true; defer { articlesLoading = false }
+        articles = await articleService.fetch()
+    }
+
+    func cacheArticle(_ a: Article) async { await articleService.cache(a) }
+
+    func articleURL(_ a: Article) -> URL {
+        OfflineStore.isArticleCached(a.link) ? OfflineStore.articleFile(a.link) : (URL(string: a.link) ?? OfflineStore.articleFile(a.link))
+    }
+    func articleIsCached(_ a: Article) -> Bool { OfflineStore.isArticleCached(a.link) }
 
     func send() async {
         let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -2,6 +2,7 @@ import SwiftUI
 
 enum Tab: String, CaseIterable, Identifiable {
     case spaces = "Spaces"
+    case articles = "Articles"
     case models = "Models"
     case run = "Run"
     case yours = "Yours"
@@ -9,6 +10,7 @@ enum Tab: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .spaces: "gamecontroller"
+        case .articles: "book"
         case .models: "cube.box"
         case .run: "bubble.left.and.text.bubble.right"
         case .yours: "person.crop.circle"
@@ -38,6 +40,7 @@ struct ContentView: View {
         } detail: {
             switch tab {
             case .spaces: SpacesView()
+            case .articles: ArticlesView()
             case .models: ModelsView()
             case .run: RunView()
             case .yours: YoursView()
@@ -113,12 +116,77 @@ struct SpacePlayerView: View {
         .navigationTitle(space.name)
         .toolbar {
             ToolbarItem {
+                if state.downloadingSpace == space.id {
+                    ProgressView().controlSize(.small)
+                } else if OfflineStore.isSpaceDownloaded(space.id) {
+                    Image(systemName: "checkmark.icloud").foregroundStyle(.green).help("Available offline")
+                } else {
+                    Button {
+                        Task { await state.downloadSpaceOffline(space); url = await state.resolveHost(space) }
+                    } label: { Image(systemName: "arrow.down.circle") }
+                    .help("Download for offline play")
+                }
+            }
+            ToolbarItem {
                 Link(destination: URL(string: "https://huggingface.co/spaces/\(space.id)")!) {
                     Image(systemName: "safari")
                 }.help("Open on huggingface.co")
             }
         }
         .task(id: space.id) { url = await state.resolveHost(space) }
+    }
+}
+
+// MARK: - Articles (offline-first reader)
+
+struct ArticlesView: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        NavigationStack {
+            List(state.articles) { a in
+                NavigationLink(value: a) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(a.title).font(.headline)
+                            if state.articleIsCached(a) {
+                                Image(systemName: "checkmark.icloud").font(.caption).foregroundStyle(.green)
+                            }
+                        }
+                        if !a.summary.isEmpty { Text(a.summary).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
+                        Text(a.source).font(.caption2).foregroundStyle(.tertiary)
+                    }.padding(.vertical, 2)
+                }
+                .swipeActions { Button("Save") { Task { await state.cacheArticle(a) } } }
+            }
+            .navigationDestination(for: Article.self) { ArticleReaderView(article: $0) }
+            .navigationTitle("Articles")
+            .overlay {
+                if state.articles.isEmpty {
+                    if state.articlesLoading { ProgressView() }
+                    else { ContentUnavailableView("Offline-first reading", systemImage: "book",
+                        description: Text("Your pocoo essays — read on the plane. Open one and it's cached for offline.")) }
+                }
+            }
+            .task { if state.articles.isEmpty { await state.loadArticles() } }
+        }
+    }
+}
+
+struct ArticleReaderView: View {
+    @Environment(AppState.self) private var state
+    let article: Article
+    var body: some View {
+        SpaceWebView(url: state.articleURL(article))
+            .ignoresSafeArea(edges: .bottom)
+            .navigationTitle(article.title)
+            .toolbar {
+                ToolbarItem {
+                    Button { Task { await state.cacheArticle(article) } } label: {
+                        Image(systemName: state.articleIsCached(article) ? "checkmark.icloud" : "arrow.down.circle")
+                    }.help("Save for offline")
+                }
+            }
+            .task { if !state.articleIsCached(article) { await state.cacheArticle(article) } }
     }
 }
 

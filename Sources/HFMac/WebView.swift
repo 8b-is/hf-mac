@@ -16,15 +16,24 @@ struct SpaceWebView: NSViewRepresentable {
         config.websiteDataStore = .default()
         let wv = WKWebView(frame: .zero, configuration: config)
         wv.allowsBackForwardNavigationGestures = true
-        wv.load(URLRequest(url: url))
+        load(url, in: wv)
         context.coordinator.loaded = url
         return wv
     }
 
     func updateNSView(_ wv: WKWebView, context: Context) {
         if context.coordinator.loaded != url {
-            wv.load(URLRequest(url: url))
+            load(url, in: wv)
             context.coordinator.loaded = url
+        }
+    }
+
+    /// Local file → offline (grant read to the whole snapshot dir); else network.
+    private func load(_ url: URL, in wv: WKWebView) {
+        if url.isFileURL {
+            wv.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        } else {
+            wv.load(URLRequest(url: url))
         }
     }
 }

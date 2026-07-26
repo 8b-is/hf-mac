@@ -85,6 +85,30 @@ struct HubClient: Sendable {
         return nil
     }
 
+    /// List a Space's files (for offline snapshot). Static spaces = plain files.
+    func spaceFiles(_ id: String) async throws -> [String] {
+        let url = URL(string: "https://huggingface.co/api/spaces/\(id)/tree/main?recursive=true")!
+        let (data, _) = try await URLSession.shared.data(for: authed(url))
+        let arr = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] ?? []
+        return arr.compactMap { ($0["type"] as? String) == "file" ? $0["path"] as? String : nil }
+    }
+
+    /// Download a Space's full file tree into the offline store → playable offline.
+    /// Returns the number of files written. (Best for `static` Spaces.)
+    func downloadSpace(_ id: String) async throws -> Int {
+        let files = try await spaceFiles(id)
+        let dir = OfflineStore.spaceDir(id)
+        var written = 0
+        for path in files {
+            guard let src = URL(string: "https://huggingface.co/spaces/\(id)/resolve/main/\(path)") else { continue }
+            let (data, resp) = try await URLSession.shared.data(for: authed(src))
+            guard (resp as? HTTPURLResponse)?.statusCode == 200 else { continue }
+            try OfflineStore.write(data, to: dir.appending(path: path))
+            written += 1
+        }
+        return written
+    }
+
     /// token -> your username (nil if no/invalid token).
     func whoami() async throws -> String? {
         guard token?.isEmpty == false else { return nil }
@@ -147,5 +171,57 @@ struct OsaurusClient: Sendable {
         let (_, resp) = try await URLSession.shared.data(for: r)
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         return code == 200 ? "pulling \(model)…" : "Osaurus returned HTTP \(code) (needs an API key? set it in Settings)"
+    }
+}
+
+// MARK: - Articles (offline-first reader)
+
+struct Article: Identifiable, Hashable, Sendable {
+    let title: String
+    let link: String
+    let summary: String
+    var source: String
+    var id: String { link }
+}
+
+/// Aggregates article feeds and caches their HTML for offline reading. Uses each
+/// site's `llms.txt` (a clean `- [title](url): desc` markdown list) rather than
+/// XML — simpler and robust. Starts with your pocoo essays; add sources freely.
+struct ArticleService: Sendable {
+    static let sources: [(name: String, llms: URL)] = [
+        ("pocoo", URL(string: "https://pocoo.vaked.dev/llms.txt")!),
+    ]
+
+    func fetch() async -> [Article] {
+        var out: [Article] = []
+        for src in Self.sources {
+            guard let (data, _) = try? await URLSession.shared.data(from: src.llms),
+                  let text = String(data: data, encoding: .utf8) else { continue }
+            for raw in text.split(separator: "\n") {
+                let line = String(raw)
+                guard line.hasPrefix("- ["),
+                      let t0 = line.firstIndex(of: "["), let t1 = line.firstIndex(of: "]"),
+                      let u0 = line.firstIndex(of: "("), let u1 = line.firstIndex(of: ")"),
+                      line.index(after: t0) < t1, line.index(after: u0) < u1 else { continue }
+                let title = String(line[line.index(after: t0)..<t1])
+                let link = String(line[line.index(after: u0)..<u1])
+                guard link.contains("/posts/") else { continue }
+                var summary = ""
+                if let colon = line.range(of: "): ") { summary = String(line[colon.upperBound...]) }
+                out.append(Article(title: title, link: link, summary: summary, source: src.name))
+            }
+        }
+        return out
+    }
+
+    /// Download + cache an article's HTML for offline reading. Returns the local file.
+    @discardableResult
+    func cache(_ article: Article) async -> URL? {
+        guard let url = URL(string: article.link),
+              let (data, resp) = try? await URLSession.shared.data(from: url),
+              (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+        let dest = OfflineStore.articleFile(article.link)
+        try? OfflineStore.write(data, to: dest)
+        return dest
     }
 }
