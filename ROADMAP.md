@@ -23,7 +23,10 @@ maps those gems to concrete integrations. 🜂 *ahogy a dolgok vannak.*
   on-device speed (`ModelSpeed`: ternary → MLX-4bit → quantized → full) with a
   badge + fast-model presets (MLX 4-bit · BitNet/ternary · GGUF), steering you
   onto models that run 2–4× faster in Osaurus. The ternary frontier — 8b's
-  **MLX-QUANT** (BitNet b1.58 / rivaquant) — needs an engine built on MLX-QUANT.
+  **MLX-QUANT** (BitNet b1.58 / rivaquant / quantal) — landed its Metal **GPU**
+  kernel in **v1.0.0** (`ternary_qmv_fast`); the engine primitive now exists and
+  the last mile is Osaurus serving it (its `vmlx` MLX-QUANT path). hf.app already
+  badges and drives a ternary model the instant Osaurus lists one.
 - **v0.6.0 — Streaming chat.** Replies fill token-by-token at the model's real
   tokens/sec (OpenAI-compatible SSE via `OsaurusClient.chatStream`) instead of
   blocking on the whole answer — the point of local inference, made visible.
@@ -39,7 +42,7 @@ Mapped all ~80 org repos; these are the ones that directly level up hf.app / ent
 |---|---|---|---|
 | **1 — voice ✅** | Apple-native now → `liquid-rust` / `kokoro-tiny` next | Talk to hf.app: mic → transcript → chat → spoken reply. **Shipped v0.5.0** on Apple engines; 8b-native sidecar swap pending. | Sidecar binaries behind `VoiceEngine.swift`. |
 | **2 — real memory** | **MEM8** (`8b-Mem8`, `mem8v2`, `m8a/m8c`) | Replace the preview's lexical recall with wave-stored, lossless MEM8 recall. | Sidecar or FFI; keep `Memory.swift`'s interface, swap the scorer. |
-| **3 — quant/speed ✅ front-end** | `MLX-QUANT` = MLX + BitNet b1.58 ternary kernels | Models tab steers you onto fast quantized models (v0.7.0). *Running the ternary kernels for inference is engine-level:* Osaurus adopts MLX-QUANT, or hf.app grows a native MLX-QUANT engine (mlx-swift/C++). | Engine, not the thin front-end. |
+| **3 — quant/speed ✅ front-end** | `MLX-QUANT` = MLX + BitNet b1.58 ternary kernels | Models tab steers you onto fast quantized models (v0.7.0). **MLX-QUANT v1.0.0 landed the Metal GPU ternary kernel** (`ternary_qmv_fast`) — the engine primitive now exists; the last mile is Osaurus serving it via its `vmlx` path. hf.app is aligned: `ModelSpeed` classifies the full rivaquant / quantal / mlx-quant lineage and drives it the instant Osaurus lists one. | Engine lands in Osaurus; the thin front-end is ready. |
 | 4 — compression | `marqant` + `kompress-core` | The "compress LAST" half of memory-pp; compress raw spans as they age. | Already what memory-pp's `KompressMarqant` calls — port or sidecar. |
 | 5 — semantic files | `smart-tree` | A "Codebase" surface: semantic search + AST-aware context for the agent. | Already an applet in rustybox; reuse as a tool. |
 

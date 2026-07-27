@@ -6,8 +6,13 @@ import Foundation
 /// than fp16 and runs ~2–4× faster in Osaurus.
 ///
 /// The frontier is **8b's MLX-QUANT** — native BitNet b1.58 *ternary* kernels
-/// (~1.58 bits, the rivaquant lineage): the fastest of all, once an engine
-/// built on MLX-QUANT serves them. See ROADMAP.
+/// (~1.58 bits, the rivaquant / quantal lineage): the fastest of all. As of
+/// **MLX-QUANT v1.0.0** the Metal **GPU** kernel is real (the fused
+/// `ternary_qmv_fast` for the `nn.Linear` decode shape), so the engine
+/// primitive the front-end was waiting on now exists; the last mile is Osaurus
+/// serving it through its `vmlx` MLX-QUANT path. hf.app is aligned and ready
+/// either way — it already badges and drives a ternary model the instant
+/// Osaurus lists one. See ROADMAP.
 enum ModelSpeed: Int, Sendable, Comparable {
     case unknown = 0
     case full    = 1   // fp16 / bf16 / fp32 — full precision, slowest on-device
@@ -33,7 +38,8 @@ enum ModelSpeed: Int, Sendable, Comparable {
         let s = id.lowercased()
         let lib = (library ?? "").lowercased()
         if s.contains("bitnet") || s.contains("ternary") || s.contains("1.58") ||
-           s.contains("1bit") || s.contains("1-bit") || s.contains("rivaquant") { return .ternary }
+           s.contains("1bit") || s.contains("1-bit") || s.contains("rivaquant") ||
+           s.contains("quantal") || s.contains("mlx-quant") || s.contains("mlxquant") { return .ternary }
         let has4bit = s.contains("4bit") || s.contains("4-bit") || s.contains("q4") || s.contains("int4")
         if lib == "mlx" || s.contains("mlx") { return has4bit ? .mlx4bit : .quant }
         if has4bit || s.contains("gguf") || s.contains("awq") || s.contains("gptq") ||
