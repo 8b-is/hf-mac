@@ -13,7 +13,7 @@ At **`hf.app`**, security, data privacy, and user sovereignty are fundamental ar
 - **Local Engine Binding**: All local LLM inference occurs strictly via `localhost:1337` communicating with [Osaurus](https://github.com/osaurus-ai/osaurus). No prompts or chat histories leave your local machine.
 
 ### 2. macOS App Sandbox & Entitlements
-`hf.app` strictly adheres to Apple's macOS App Sandbox security controls defined in [`Packaging/hf-mac.entitlements`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Packaging/hf-mac.entitlements):
+`hf.app` strictly adheres to Apple's macOS App Sandbox security controls defined in [`Packaging/hf-mac.entitlements`](Packaging/hf-mac.entitlements):
 
 ```xml
 <key>com.apple.security.app-sandbox</key>

@@ -52,6 +52,7 @@ Most AI desktop applications suffer from bloated electron wrappers, bundled Pyth
 | 🜂 **Dual Native macOS UI** | Work in a standard desktop application window (`WindowGroup`) or invoke the lightweight menu-bar quick assistant (`MenuBarExtra`) anytime. |
 | 🧠 **MoE Optimizer Layer** | Automatically classifies prompt intent (Code, Math & Reasoning, Summarization, Creative) and routes to specialized local models with expert system prompts. |
 | 🔐 **Keychain Token Isolation** | Securely encrypt and store Hugging Face User Access Tokens in the system macOS Keychain using `Security.framework`. |
+| 🌊 **MEM8 Wave Memory** | On-device wave interference recall — encodes spans as frequency/amplitude/phase waves, scores relevance via interference, zero network. |
 | 🌐 **Offline First** | Once local models are pulled into Osaurus, chat and prompt inference operate completely offline with no network requirement. |
 
 ![Privacy and On-Device Local Execution](assets/images/privacy_local_graphic.png)
@@ -88,7 +89,8 @@ Browse HF Hub  →  Pull to Osaurus  →  MoE Auto-Route & Optimize  →  Run & 
 1. **Browse**: `HubClient` queries the Hugging Face REST API (`api-inference.huggingface.co`) for model cards, tags, and creator metadata.
 2. **Pull**: Model weights are downloaded and cached by **Osaurus** into unified memory.
 3. **MoE Optimize**: `MoEOptimizer` classifies prompt intent into domain experts (Code, Reasoning, Summary, Creative) and selects the best local model.
-4. **Run & Chat**: `OsaurusClient` streams OpenAI-compatible `/v1/chat/completions` JSON responses to SwiftUI glass components.
+4. **MEM8 Recall**: `EntheaiMemory` retrieves relevant past spans via wave interference scoring — frequency proximity × amplitude × phase alignment.
+5. **Run & Chat**: `OsaurusClient` streams OpenAI-compatible `/v1/chat/completions` JSON responses to SwiftUI glass components.
 
 ---
 
@@ -105,18 +107,22 @@ Sources/HFMac/
 ├── Services.swift      # HubClient (HF Hub REST) & OsaurusClient (OpenAI /v1 API)
 ├── Views.swift         # SwiftUI view hierarchy (Browse, Run, Your Models, MenuBar agent)
 ├── Keychain.swift      # Security.framework wrapper for HF tokens
+├── Memory.swift        # MEM8 wave-based recall engine (on-device, zero network)
 ├── OfflineStore.swift   # Local persistence & cached model state
 ├── WebView.swift       # WKWebView bridge for interactive model cards & Spaces
+├── VoiceEngine.swift   # On-device TTS/STT (Apple-native, sidecar-ready)
+├── ModelSpeed.swift    # Model quantization speed classification
 └── Theme.swift         # Modern macOS dark glass mode tokens & styling constants
 ```
 
 ### Key Modules
 
-- [`MoEOptimizer.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/MoEOptimizer.swift): Implements domain classification (`ExpertDomain`) and intelligent expert model routing.
-- [`Services.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Services.swift): Contains `HubClient` for Hugging Face REST search and `OsaurusClient` for local OpenAI-compatible endpoint communication.
-- [`HFMacApp.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/HFMacApp.swift): The main application definition managing reactive `@Observable AppState`.
-- [`Views.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Views.swift): Defines SwiftUI components for browsing, chatting, model management, and the floating menu-bar quick agent.
-- [`Keychain.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Keychain.swift): Implements secure OS-level keychain access (`dev.peterl.hfmac.token`).
+- [`MoEOptimizer.swift`](Sources/HFMac/MoEOptimizer.swift): Implements domain classification (`ExpertDomain`) and intelligent expert model routing.
+- [`Services.swift`](Sources/HFMac/Services.swift): Contains `HubClient` for Hugging Face REST search and `OsaurusClient` for local OpenAI-compatible endpoint communication.
+- [`HFMacApp.swift`](Sources/HFMac/HFMacApp.swift): The main application definition managing reactive `@Observable AppState`.
+- [`Views.swift`](Sources/HFMac/Views.swift): Defines SwiftUI components for browsing, chatting, model management, and the floating menu-bar quick agent.
+- [`Keychain.swift`](Sources/HFMac/Keychain.swift): Implements secure OS-level keychain access (`dev.peterl.hfmac.token`).
+- [`Memory.swift`](Sources/HFMac/Memory.swift): MEM8 wave-based recall engine — encodes spans as waves, scores relevance via interference.
 
 ---
 
@@ -156,7 +162,7 @@ open Package.swift
 
 ## 🛡️ Security & Data Sovereignty
 
-- **App Sandbox Entitlements**: Enforced via [`Packaging/hf-mac.entitlements`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Packaging/hf-mac.entitlements) (`com.apple.security.app-sandbox` and `com.apple.security.network.client`).
+- **App Sandbox Entitlements**: Enforced via [`Packaging/hf-mac.entitlements`](Packaging/hf-mac.entitlements) (`com.apple.security.app-sandbox` and `com.apple.security.network.client`).
 - **Zero Telemetry**: No tracking cookies, analytics SDKs, or diagnostic logging.
 - **Keychain Security**: Hugging Face access tokens are encrypted in the macOS Keychain.
 - See our full [`SECURITY.md`](SECURITY.md) policy for vulnerability disclosure guidelines.
@@ -165,7 +171,7 @@ open Package.swift
 
 ## 📦 Building & Distribution
 
-Build targets and notarization processes are documented in [`PUBLISHING.md`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/PUBLISHING.md):
+Build targets and notarization processes are documented in [`PUBLISHING.md`](PUBLISHING.md):
 
 - **Direct Notarized DMG**: Automated build via `.github/workflows/release.yml` on `v*` tag pushes.
 - **Mac App Store**: Scaffolded in `.github/workflows/mas.yml` for sandboxed App Store Connect upload.

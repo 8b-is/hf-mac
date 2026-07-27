@@ -79,7 +79,7 @@ Sources/HFMac/
 - State management must use `@Observable` (iOS 17+ / macOS 14+) rather than `ObservableObject` / `@Published`.
 
 ### 2. Styling & Dark Mode Aesthetics
-- Follow the design tokens in [`Theme.swift`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/Sources/HFMac/Theme.swift).
+- Follow the design tokens in [`Theme.swift`](Sources/HFMac/Theme.swift).
 - Use macOS native dark mode colors, subtle glassmorphic backgrounds, and clean padding.
 - Avoid hardcoded magic UI offset numbers; compute layout bounds dynamically.
 
@@ -120,6 +120,6 @@ To build a standalone macOS application bundle:
 swift build -c release
 ```
 
-Refer to [`PUBLISHING.md`](file:///Users/peter.lodri/workspace/peterlodri-sec/hf-mac/PUBLISHING.md) for full instructions on cutting tagged Developer-ID notarized DMG releases.
+Refer to [`PUBLISHING.md`](PUBLISHING.md) for full instructions on cutting tagged Developer-ID notarized DMG releases.
 
 🜂 *ahogy a dolgok vannak* — thank you for contributing!
