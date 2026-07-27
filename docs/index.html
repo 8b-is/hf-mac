@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>hf.app — Native macOS Hugging Face Client on Apple Silicon</title>
-  <meta name="description" content="Browse the Hugging Face Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent on macOS. Honest by design.">
+  <meta name="description" content="Browse the Hugging Face Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent on macOS. Unified surface for the 8b-is stack: entheai + ayeOS + MEM8. Honest by design.">
   <meta name="keywords" content="Hugging Face, macOS, Apple Silicon, M1, M2, M3, M4, Osaurus, local LLM, MLX, open-weight models, Swift, SwiftUI, on-device AI, privacy, MoE, Mixture of Experts">
   <meta name="author" content="8b-is / vaked constellation">
   <meta name="robots" content="index, follow">
@@ -16,7 +16,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://8b-is.github.io/hf-mac/">
   <meta property="og:title" content="hf.app — Native macOS Hugging Face Client on Apple Silicon">
-  <meta property="og:description" content="Browse the Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent. Honest by design.">
+  <meta property="og:description" content="Browse the Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent. Unified surface for the 8b-is stack: entheai + ayeOS + MEM8. Honest by design.">
   <meta property="og:image" content="https://8b-is.github.io/hf-mac/assets/images/og_image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -27,7 +27,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://8b-is.github.io/hf-mac/">
   <meta name="twitter:title" content="hf.app — Native macOS Hugging Face Client on Apple Silicon">
-  <meta name="twitter:description" content="Browse the Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent. Honest by design.">
+  <meta name="twitter:description" content="Browse the Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent. Unified surface for the 8b-is stack: entheai + ayeOS + MEM8. Honest by design.">
   <meta name="twitter:image" content="https://8b-is.github.io/hf-mac/assets/images/og_image.png">
   
   <!-- Structured Data / JSON-LD -->
@@ -39,8 +39,8 @@
     "operatingSystem": "macOS 14.0+",
     "applicationCategory": "DeveloperApplication",
     "description": "Native macOS Hugging Face client on Apple Silicon. Browse the Hub, play Spaces, and run models locally via Osaurus.",
-    "downloadUrl": "https://github.com/8b-is/hf-mac/releases/tag/v0.9.2",
-    "softwareVersion": "0.9.2",
+    "downloadUrl": "https://github.com/8b-is/hf-mac/releases/tag/v0.10.0",
+    "softwareVersion": "0.10.0",
     "author": {
       "@type": "Organization",
       "name": "8b-is / vaked constellation",
@@ -85,7 +85,7 @@
       </div>
       <h1>Browse HF Hub. Run Locally.<br><span class="gradient-text">Zero Cloud Dependency.</span></h1>
       <p class="hero-subtitle">
-        The thin, honest macOS front-end for Hugging Face. Driven by <strong>Osaurus</strong> for MLX local inference with zero telemetry, real tokens/sec, and dual window/menu-bar interface.
+        The thin, honest macOS front-end for Hugging Face — unified surface for the <strong>8b-is stack</strong>. Driven by <strong>Osaurus</strong> for MLX local inference, <strong>entheai</strong> for agent decomposition, <strong>MEM8</strong> for wave memory, and <strong>ayeOS</strong> for ternary inference, all with zero telemetry and real tokens/sec.
       </p>
       
       <div class="hero-actions">
@@ -100,7 +100,7 @@
         </a>
       </div>
       <p class="hero-meta">
-        <a href="https://github.com/8b-is/hf-mac/releases/download/v0.9.2/hf-mac-v0.9.2.dmg"><strong>v0.9.2</strong></a>
+        <a href="https://github.com/8b-is/hf-mac/releases/download/v0.10.0/hf-mac-v0.10.0.dmg"><strong>v0.10.0</strong></a>
         · notarized &amp; stapled · Apple Silicon (arm64) · macOS 14 Sonoma+
       </p>
 
@@ -146,14 +146,26 @@
 
           <div class="card">
             <div class="card-icon">♾️</div>
-            <h3>entheai Memory · Preview</h3>
-            <p>A native port of entheai's memory-pp engine — keeps the past raw and recalls the most relevant spans across sessions. On-device, deterministic, zero network.</p>
+            <h3>MEM8 Wave Memory</h3>
+            <p>Wave interference recall with entheai-aligned frequency-band classification. On-device, deterministic, zero network — same algorithm as the Rust memory-pp NativeMesh.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">🔺</div>
+            <h3>ayeOS Ternary Daemon</h3>
+            <p>Deterministic LINOSV-seeded ternary matrices at 12.80× compression. MEMNET protocol daemon bridged to MLX-QUANT Metal kernels for BitNet b1.58 inference.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">🧠</div>
+            <h3>entheai Agent</h3>
+            <p>Spawn the entheai agent as a subprocess for fan-out decomposition, codebase analysis, and project-wide operations — all from the Ecosystem tab.</p>
           </div>
 
           <div class="card">
             <div class="card-icon">🎙️</div>
-            <h3>Voice · Preview</h3>
-            <p>Talk to your local model — on-device dictation and spoken replies via Apple-native speech, forced on-device. The liquid-rust / kokoro engines slot in next.</p>
+            <h3>Voice · Sidecar Architecture</h3>
+            <p>VoiceBackend protocol with swappable Apple-native or 8b-native Rust sidecars (kokoro-tiny TTS, liquid-rust STT). On-device, zero telemetry.</p>
           </div>
         </div>
       </div>
@@ -187,13 +199,14 @@
           <span class="badge-pill">Clean Separation</span>
           <h3>Data Flow & Architecture</h3>
           <p>
-            Browse models on Hugging Face Hub → pull into Osaurus → chat locally using standard OpenAI-compatible `/v1` endpoints.
+            Browse models on Hugging Face Hub → pull into Osaurus → MEM8 wave recall → MoE auto-route → ayeOS ternary inference → chat locally. The full 8b-is stack: Osaurus (inference), entheai (agent), MEM8 (wave memory), MLX-QUANT (ternary), ayeOS (daemon).
           </p>
           <ul class="showcase-list">
             <li><span>✓</span> <strong>MoEOptimizer.swift:</strong> Intent Classifier & Model Router</li>
-            <li><span>✓</span> <strong>Services.swift:</strong> HubClient & OsaurusClient APIs</li>
-            <li><span>✓</span> <strong>HFMacApp.swift:</strong> MainActor Observable AppState</li>
-            <li><span>✓</span> <strong>Views.swift:</strong> SwiftUI WindowGroup + MenuBarExtra</li>
+            <li><span>✓</span> <strong>Memory.swift:</strong> MEM8 Wave Interference Recall</li>
+            <li><span>✓</span> <strong>Services.swift:</strong> HubClient · OsaurusClient · AyeosClient · EntheaiClient</li>
+            <li><span>✓</span> <strong>HFMacApp.swift:</strong> MainActor Observable AppState + ProcessManager</li>
+            <li><span>✓</span> <strong>Views.swift:</strong> SwiftUI WindowGroup + MenuBarExtra + Ecosystem tab</li>
           </ul>
         </div>
         <div class="showcase-img-wrap">
@@ -263,7 +276,7 @@
         <!-- Tab 1: Quick Start -->
         <div class="tab-content active" id="tab-quickstart">
           <h3>Install in under a minute</h3>
-          <p><strong>1 · Get the app.</strong> Download the <a href="https://github.com/8b-is/hf-mac/releases/latest" target="_blank" rel="noopener" style="color: var(--hf-yellow);">latest&nbsp;.dmg (v0.9.2)</a>, open it, and drag <strong>hf.app</strong> into Applications. It's Developer-ID signed &amp; notarized, so it opens with no Gatekeeper warning — no <code>xattr</code> dance.</p>
+          <p><strong>1 · Get the app.</strong> Download the <a href="https://github.com/8b-is/hf-mac/releases/latest" target="_blank" rel="noopener" style="color: var(--hf-yellow);">latest&nbsp;.dmg (v0.10.0)</a>, open it, and drag <strong>hf.app</strong> into Applications. It's Developer-ID signed &amp; notarized, so it opens with no Gatekeeper warning — no <code>xattr</code> dance.</p>
           <p><strong>2 · Get the engine.</strong> Install <a href="https://github.com/osaurus-ai/osaurus" target="_blank" rel="noopener" style="color: var(--hf-yellow);">Osaurus</a> and start it on <code>localhost:1337</code>. hf.app is the thin front-end; Osaurus owns the weights, MLX, and serving.</p>
           <p><strong>3 · Pull &amp; run.</strong> Pull a model in Osaurus (Llama, Qwen, Phi…), then hit <strong>Refresh</strong> in the <em>Run</em> tab of hf.app. Real tokens/sec, fully on-device — your HF token stays in the macOS Keychain.</p>
 
@@ -283,7 +296,7 @@ swift run</code>
         <!-- Tab 2: Codebase Architecture -->
         <div class="tab-content" id="tab-architecture">
           <h3>Swift codebase — <code>Sources/HFMac/</code></h3>
-          <p>Eight single-responsibility files, ~1,200 lines total. hf.app drives <a href="https://github.com/osaurus-ai/osaurus" target="_blank" rel="noopener" style="color: var(--hf-yellow);">Osaurus</a> for inference and embeds live Spaces — it never bundles weights or a model runtime. Read by layer:</p>
+          <p>Ten single-responsibility files, ~1,600 lines total. hf.app drives <a href="https://github.com/osaurus-ai/osaurus" target="_blank" rel="noopener" style="color: var(--hf-yellow);">Osaurus</a> for inference, <a href="https://github.com/entropy-om/entheai" target="_blank" rel="noopener" style="color: var(--hf-yellow);">entheai</a> for agent tasks, and <a href="https://github.com/8b-is/ayeos" target="_blank" rel="noopener" style="color: var(--hf-yellow);">ayeOS</a> for ternary inference — it never bundles weights or a model runtime. Read by layer:</p>
 
           <div class="arch-map">
             <div class="arch-group">
@@ -304,18 +317,18 @@ swift run</code>
               <div class="arch-group-label">Data &amp; services</div>
               <div class="arch-row">
                 <span class="arch-file">Memory.swift</span>
-                <span class="arch-role"><strong>entheai memory · preview</strong> — native port of entheai's <code>memory-pp</code>: keep the past raw, recall relevant spans by lexical overlap (the <code>NativeMesh</code> scorer). On-device, deterministic.</span>
-                <span class="arch-loc">101 loc</span>
+                <span class="arch-role"><strong>MEM8 wave recall</strong> — port of MEM8 from smart-tree's `wave.rs` to native Swift. Frequency-band encoding + interference scoring. Same algorithm as entheai's Rust `mesh.rs` `wave_scorer`. On-device, deterministic.</span>
+                <span class="arch-loc">140 loc</span>
               </div>
               <div class="arch-row">
                 <span class="arch-file">VoiceEngine.swift</span>
-                <span class="arch-role"><strong>voice · preview</strong> — on-device TTS (speak replies) + STT dictation via Apple-native <code>Speech</code>/<code>AVFoundation</code>, forced on-device. The <code>liquid-rust</code>/<code>kokoro</code> sidecars slot in behind this.</span>
-                <span class="arch-loc">97 loc</span>
+                <span class="arch-role"><strong>VoiceBackend protocol</strong> — Apple-native `AVSpeechSynthesizer`/`SFSpeechRecognizer` plus `ProcessVoiceBackend` for 8b-native Rust sidecars (kokoro-tiny TTS, liquid-rust STT). Swappable at runtime.</span>
+                <span class="arch-loc">200 loc</span>
               </div>
               <div class="arch-row">
                 <span class="arch-file">Services.swift</span>
-                <span class="arch-role"><code>HubClient</code> (HF Hub REST — model &amp; Space search) and <code>OsaurusClient</code> (OpenAI <code>/v1</code> chat + model pull), with the <code>HubModel</code> / <code>HFSpace</code> types.</span>
-                <span class="arch-loc">291 loc</span>
+                <span class="arch-role"><code>HubClient</code> (HF Hub REST), <code>OsaurusClient</code> (OpenAI /v1 chat), <code>AyeosClient</code> (MEMNET TCP:9876), <code>EntheaiClient</code> (subprocess agent), <code>ProcessManager</code> (lifecycle).</span>
+                <span class="arch-loc">430 loc</span>
               </div>
               <div class="arch-row">
                 <span class="arch-file">OfflineStore.swift</span>
@@ -333,8 +346,8 @@ swift run</code>
               <div class="arch-group-label">Interface</div>
               <div class="arch-row">
                 <span class="arch-file">Views.swift</span>
-                <span class="arch-role">The five tabs — <strong>Spaces</strong>, <strong>Articles</strong>, <strong>Models</strong>, <strong>Run</strong>, <strong>Yours</strong> — plus the menu-bar agent and settings.</span>
-                <span class="arch-loc">520 loc</span>
+                <span class="arch-role">Six tabs — <strong>Spaces</strong>, <strong>Articles</strong>, <strong>Models</strong>, <strong>Run</strong>, <strong>Yours</strong>, <strong>Ecosystem</strong> — plus menu-bar agent and settings.</span>
+                <span class="arch-loc">780 loc</span>
               </div>
               <div class="arch-row">
                 <span class="arch-file">WebView.swift</span>
@@ -430,7 +443,7 @@ open HFMac.xcodeproj       # ⌘R to run · Product ▸ Archive to package</code
               <span>RELEASE — TAG TO SHIP</span>
               <button class="copy-btn">Copy</button>
             </div>
-            <code>git tag v0.9.2
+            <code>git tag v0.10.0
 git push --tags      # → notarized .dmg on Releases</code>
           </div>
 
@@ -465,8 +478,9 @@ git push --tags      # → notarized .dmg on Releases</code>
         <span class="sep">· github ·</span>
         <a href="https://github.com/entropy-om/entheai" target="_blank" rel="noopener">entheai</a> ·
         <a href="https://github.com/8b-is/hf-mac" target="_blank" rel="noopener">hf-mac</a> ·
-        <a href="https://github.com/peterlodri-sec/vaked-infra" target="_blank" rel="noopener">vaked-infra</a> ·
-        <a href="https://github.com/peterlodri-sec/vaked-almanac" target="_blank" rel="noopener">vaked-almanac</a>
+        <a href="https://github.com/8b-is/ayeos" target="_blank" rel="noopener">ayeOS</a> ·
+        <a href="https://github.com/8b-is/MLX-QUANT" target="_blank" rel="noopener">MLX-QUANT</a> ·
+        <a href="https://github.com/8b-is/smart-tree" target="_blank" rel="noopener">smart-tree</a>
       </div>
     </div>
   </footer>

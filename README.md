@@ -9,7 +9,7 @@
 [![Security Policy](https://img.shields.io/badge/Security-Policy-06B6D4?logo=shield&logoColor=white)](SECURITY.md)
 [![Contributing](https://img.shields.io/badge/Contributions-Welcome-8B5CF6?logo=github&logoColor=white)](CONTRIBUTING.md)
 
-Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/osaurus-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. `hf.app` is the thin, honest native front-end — Osaurus owns the weights, MLX, and serving.
+Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/osaurus-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. `hf.app` is the thin, honest native front-end — the unified macOS surface for the **8b-is stack**: Osaurus (inference), entheai (agent), MEM8 (wave memory), MLX-QUANT (ternary Metal kernels), and ayeOS (ternary inference daemon).
 
 🌐 **Official Web Site & Documentation:** [https://8b-is.github.io/hf-mac/](https://8b-is.github.io/hf-mac/)
 
@@ -52,7 +52,10 @@ Most AI desktop applications suffer from bloated electron wrappers, bundled Pyth
 | 🜂 **Dual Native macOS UI** | Work in a standard desktop application window (`WindowGroup`) or invoke the lightweight menu-bar quick assistant (`MenuBarExtra`) anytime. |
 | 🧠 **MoE Optimizer Layer** | Automatically classifies prompt intent (Code, Math & Reasoning, Summarization, Creative) and routes to specialized local models with expert system prompts. |
 | 🔐 **Keychain Token Isolation** | Securely encrypt and store Hugging Face User Access Tokens in the system macOS Keychain using `Security.framework`. |
-| 🌊 **MEM8 Wave Memory** | On-device wave interference recall — encodes spans as frequency/amplitude/phase waves, scores relevance via interference, zero network. |\n| 🔺 **ayeOS Ternary Ready** | `ModelSpeed` classifies BitNet b1.58/MLX-QUANT/ternary models; badges ayeOS-served ternary matrices at 12.80× compression. |
+| 🌊 **MEM8 Wave Memory** | On-device wave interference recall — MEM8 frequency-band classification with entheai-aligned scoring. Zero network. |
+| 🔺 **ayeOS Ternary Ready** | `ModelSpeed` badges ternary matrices at 12.80× compression via ayeOS MEMNET daemon. |
+| 🧠 **entheai Agent** | Spawn entheai subprocess for fan-out decomposition, code analysis, project-wide ops — Ecosystem tab. |
+| 🜂 **Ecosystem Tab** | Unified dashboard: Osaurus · entheai · ayeOS · MEM8 · MLX-QUANT — all status at a glance. |
 | 🌐 **Offline First** | Once local models are pulled into Osaurus, chat and prompt inference operate completely offline with no network requirement. |
 
 ![Privacy and On-Device Local Execution](assets/images/privacy_local_graphic.png)
