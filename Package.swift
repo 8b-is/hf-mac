@@ -8,6 +8,11 @@ let package = Package(
         .executableTarget(
             name: "HFMac",
             path: "Sources/HFMac"
-        )
+        ),
+        .testTarget(
+            name: "HFMacTests",
+            dependencies: ["HFMac"],
+            path: "Tests"
+        ),
     ]
 )

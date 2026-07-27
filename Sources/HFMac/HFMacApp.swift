@@ -62,8 +62,7 @@ final class AppState {
     var moeEnabled = true
     var activeDomain: ExpertDomain = .general
 
-    // entheai memory — preview engine (native Swift port of crates/memory-pp:
-    // keep the past raw, recall the relevant spans across sessions)
+    // MEM8 memory — wave recall engine (port of 8b-is MEM8 wave interference)
     var memoryEnabled = true
     var memory = EntheaiMemory()
     var lastRecallCount = 0
@@ -195,7 +194,7 @@ final class AppState {
         prompt = ""
 
         var fullMessages = route.formattedMessages
-        // entheai memory (preview): recall relevant past spans as context.
+        // MEM8 memory: recall relevant past spans via wave interference.
         if memoryEnabled, let (ctx, hits) = memory.contextMessage(for: text) {
             fullMessages.append(ctx)
             lastRecallCount = hits.count

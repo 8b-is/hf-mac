@@ -445,7 +445,7 @@ struct RunView: View {
                 .background(Theme.glassMaterial, in: Capsule())
                 .overlay(Capsule().strokeBorder(state.moeEnabled ? Theme.glassBorderHighlight : Theme.glassBorder))
 
-                // entheai memory (preview engine)
+                // MEM8 memory (wave recall)
                 HStack(spacing: 6) {
                     Image(systemName: "brain.head.profile")
                         .font(.caption2)
@@ -457,7 +457,7 @@ struct RunView: View {
                 .padding(.horizontal, 8).padding(.vertical, 4)
                 .background(Theme.glassMaterial, in: Capsule())
                 .overlay(Capsule().strokeBorder(state.memoryEnabled ? Theme.green.opacity(0.4) : Theme.glassBorder))
-                .help("entheai memory · preview — recalls relevant past exchanges (\(state.memory.count) spans stored)")
+                .help("MEM8 memory · wave recall (\(state.memory.count) spans stored)")
 
                 if state.memoryEnabled, state.lastRecallCount > 0 {
                     HStack(spacing: 4) {
@@ -672,9 +672,9 @@ struct SettingsView: View {
                 Text("Automatically detects code, math, summary, or creative prompts and routes to specialized local models.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("entheai memory · preview") {
+            Section("MEM8 memory · wave recall") {
                 Toggle("Recall relevant past exchanges (on-device)", isOn: $s.memoryEnabled)
-                Text("A native port of entheai's memory-pp engine — keep the past raw, recall the most relevant spans across sessions. \(state.memory.count) spans stored; never leaves your Mac.")
+                Text("A Swift port of MEM8 — wave interference recall. \(state.memory.count) spans stored; never leaves your Mac.")
                     .font(.caption).foregroundStyle(.secondary)
                 Button("Clear memory (\(state.memory.count) spans)") { state.clearMemory() }
                     .disabled(state.memory.count == 0)

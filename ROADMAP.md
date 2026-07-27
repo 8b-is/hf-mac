@@ -12,6 +12,13 @@ maps those gems to concrete integrations. 🜂 *ahogy a dolgok vannak.*
   space.* On-device raw span store + lexical recall mirroring entheai's `NativeMesh`
   scorer (distinct query-term overlap). Wired into chat (recall-inject + record-raw),
   Run-toolbar toggle, Settings. Verified end-to-end. No model, no network, no telemetry.
+- **v0.10.0 — MEM8 wave recall.** Replaced the lexical overlap scorer with wave
+  interference: MEM8 frequency-band encoding (`MEM8Band`) maps content type to Hz,
+  interference scoring (`MEM8Wave.interference(with:)`) computes query-wave vs stored-wave
+  proximity via gaussian frequency falloff, amplitude product, and phase alignment.
+  Same `EntheaiMemory` interface, same persistence, same zero-network creed. The
+  lightweight text→wave encoding (`MEM8Band.band(for:)` classifies code/math/summary/creative)
+  mirrors 8b-is smart-tree's `src/mem8/wave.rs` in native Swift. No model, no sidecar.
 - **v0.9.0 — Mozart polish.** Hover-to-copy on any message; the active model'''s
   speed shows by the picker *and* in an elegant empty-chat welcome — the quant/
   speed awareness now harmonizes across Models · Run · welcome.
@@ -58,6 +65,6 @@ Mapped all ~80 org repos; these are the ones that directly level up hf.app / ent
   rewrite, unless the port is small and self-contained (as Memory.swift's was).
 
 ## Next
-Voice shipped (Apple-native, on-device). Next: **MEM8** behind the `Memory.swift`
-interface (wave recall over the lexical scorer), then the **liquid-rust / kokoro
-sidecars** to make voice fully 8b-native. Each is a self-contained, verifiable slice.
+MEM8 wave recall shipped (v0.10.0). Next: **liquid-rust / kokoro-tiny sidecars**
+to make voice fully 8b-native (over the Apple-native preview). Each is a
+self-contained, verifiable slice.
