@@ -52,7 +52,7 @@ Most AI desktop applications suffer from bloated electron wrappers, bundled Pyth
 | 🜂 **Dual Native macOS UI** | Work in a standard desktop application window (`WindowGroup`) or invoke the lightweight menu-bar quick assistant (`MenuBarExtra`) anytime. |
 | 🧠 **MoE Optimizer Layer** | Automatically classifies prompt intent (Code, Math & Reasoning, Summarization, Creative) and routes to specialized local models with expert system prompts. |
 | 🔐 **Keychain Token Isolation** | Securely encrypt and store Hugging Face User Access Tokens in the system macOS Keychain using `Security.framework`. |
-| 🌊 **MEM8 Wave Memory** | On-device wave interference recall — encodes spans as frequency/amplitude/phase waves, scores relevance via interference, zero network. |
+| 🌊 **MEM8 Wave Memory** | On-device wave interference recall — encodes spans as frequency/amplitude/phase waves, scores relevance via interference, zero network. |\n| 🔺 **ayeOS Ternary Ready** | `ModelSpeed` classifies BitNet b1.58/MLX-QUANT/ternary models; badges ayeOS-served ternary matrices at 12.80× compression. |
 | 🌐 **Offline First** | Once local models are pulled into Osaurus, chat and prompt inference operate completely offline with no network requirement. |
 
 ![Privacy and On-Device Local Execution](assets/images/privacy_local_graphic.png)
@@ -80,17 +80,18 @@ Most AI desktop applications suffer from bloated electron wrappers, bundled Pyth
 
 ![Data Flow Diagram](assets/images/architecture_diagram.png)
 
-The system loop follows a clear 4-step pipeline:
+The system loop follows a clear 6-step pipeline:
 
 ```
-Browse HF Hub  →  Pull to Osaurus  →  MoE Auto-Route & Optimize  →  Run & Chat Locally (Private)
+Browse HF Hub  →  Pull to Osaurus  →  MoE Auto-Route  →  MEM8 Recall  →  ayeOS Ternary  →  Run & Chat (Private)
 ```
 
 1. **Browse**: `HubClient` queries the Hugging Face REST API (`api-inference.huggingface.co`) for model cards, tags, and creator metadata.
 2. **Pull**: Model weights are downloaded and cached by **Osaurus** into unified memory.
 3. **MoE Optimize**: `MoEOptimizer` classifies prompt intent into domain experts (Code, Reasoning, Summary, Creative) and selects the best local model.
 4. **MEM8 Recall**: `EntheaiMemory` retrieves relevant past spans via wave interference scoring — frequency proximity × amplitude × phase alignment.
-5. **Run & Chat**: `OsaurusClient` streams OpenAI-compatible `/v1/chat/completions` JSON responses to SwiftUI glass components.
+5. **ayeOS Ternary**: Ternary models (BitNet b1.58, MLX-QUANT) route through ayeOS's `{n+-1-<△>}` inference daemon — deterministic LINOSV-seeded matrices, block-sparse matmul at 12.80× compression. `ModelSpeed.ternary` badges them instantly.
+6. **Run & Chat**: `OsaurusClient` streams OpenAI-compatible `/v1/chat/completions` SSE to SwiftUI glass components.
 
 ---
 

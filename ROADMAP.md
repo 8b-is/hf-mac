@@ -65,6 +65,8 @@ Mapped all ~80 org repos; these are the ones that directly level up hf.app / ent
   rewrite, unless the port is small and self-contained (as Memory.swift's was).
 
 ## Next
-MEM8 wave recall shipped (v0.10.0). Next: **liquid-rust / kokoro-tiny sidecars**
-to make voice fully 8b-native (over the Apple-native preview). Each is a
-self-contained, verifiable slice.
+MEM8 wave recall shipped (v0.10.0) and aligned with entheai memory-pp (Rust NativeMesh
+fallback). Next: **liquid-rust / kokoro-tiny sidecars** to make voice fully 8b-native
+(over the Apple-native preview), and **ayeOS** ternary daemon integration — badge ayeOS
+ternary models distinctly from plain MLX-QUANT once Osaurus (or ayeOS itself) serves them.
+Each is a self-contained, verifiable slice.

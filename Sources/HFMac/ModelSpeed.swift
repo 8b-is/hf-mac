@@ -11,9 +11,11 @@ import Foundation
 /// **GPU** (`gather_qmm`, `ternary_qvm`, `ternary_qmv`, and a tiled
 /// `ternary_qmm_t` GEMM) — every `quantized_matmul` shape but batched weights.
 /// The engine is real; the last mile is Osaurus serving it (its Swift `vmlx`
-/// bindings, still deferred in MLX-QUANT). hf.app is aligned and ready either
-/// way — it already badges and drives a ternary model the instant Osaurus lists
-/// one. See ROADMAP.
+/// bindings, still deferred in MLX-QUANT). **ayeOS** (`8b-is/ayeos`) bridges
+/// this gap as the ternary inference daemon — deterministic LINOSV-seeded
+/// matrices, MEMNET protocol capsule distribution, block-sparse matmul.
+/// hf.app is aligned and ready either way — it already badges and drives a
+/// ternary model the instant Osaurus (or ayeOS) lists one. See ROADMAP.
 enum ModelSpeed: Int, Sendable, Comparable {
     case unknown = 0
     case full    = 1   // fp16 / bf16 / fp32 — full precision, slowest on-device

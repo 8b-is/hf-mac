@@ -10,7 +10,11 @@ import Foundation
 ///   **Keep the past RAW; search the raw space; compress LAST.**
 ///
 /// Lineage: entheai's `memory-pp` concept, MEM8 wave mathematics from 8b-is/smart-tree
-/// (`src/mem8/wave.rs`), natively re-expressed in Swift for hf.app.
+/// (`src/mem8/wave.rs`), natively re-expressed in Swift for hf.app. The same MEM8 wave
+/// scorer now ships in entheai's `NativeMesh` (Rust `mesh.rs`) as the default fallback
+/// when no `.ugm` reranker model is configured — both implementations share the frequency-
+/// band classification + interference scoring + amplitude-weighted phase alignment
+/// algorithm. Aligned across the 8b-is stack.
 
 // MARK: - Wave model
 
