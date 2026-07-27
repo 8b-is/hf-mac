@@ -330,3 +330,237 @@ struct ArticleService: Sendable {
         return dest
     }
 }
+
+// MARK: - ayeOS (ternary inference daemon — MEMNET protocol)
+
+/// Error types for ayeOS MEMNET communication.
+enum AyeosError: LocalizedError, Sendable {
+    case unreachable(String)
+    case invalidResponse
+    case protocolError(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .unreachable(let msg): "ayeOS daemon unreachable: \(msg)"
+        case .invalidResponse: "Invalid response from ayeOS MEMNET."
+        case .protocolError(let msg): "ayeOS protocol error: \(msg)"
+        }
+    }
+}
+
+/// MEMNET capsule response from ayeOS.
+struct AyeosCapsule: Decodable, Sendable {
+    let capsule_id: String
+    let payload_type: String
+    let relevance_score: Float
+    let timestamp: UInt64
+}
+
+/// ayeOS daemon client — MEMNET TCP protocol on :9876.
+/// Commands: ping, stats, capsule, get matrix.
+struct AyeosClient: Sendable {
+    var host = "127.0.0.1"
+    var port: UInt16 = 9876
+
+    /// Send a text command over TCP and return the response.
+    func sendCommand(_ cmd: String) async throws -> String {
+        var response = ""
+        try await withCheckedThrowingContinuation { (c: CheckedContinuation<Void, Error>) in
+            DispatchQueue.global().async {
+                var readStream: Unmanaged<CFReadStream>?
+                var writeStream: Unmanaged<CFWriteStream>?
+                CFStreamCreatePairWithSocketToHost(nil, host as CFString, UInt32(port), &readStream, &writeStream)
+                guard let read = readStream?.takeRetainedValue(),
+                      let write = writeStream?.takeRetainedValue() else {
+                    c.resume(throwing: AyeosError.unreachable("stream creation failed"))
+                    return
+                }
+                let data = (cmd + "\n").data(using: .utf8)!
+                let wData = data as CFData
+                CFWriteStreamOpen(write)
+                CFWriteStreamWrite(write, CFDataGetBytePtr(wData), CFDataGetLength(wData))
+                CFWriteStreamClose(write)
+
+                CFReadStreamOpen(read)
+                var buf = [UInt8](repeating: 0, count: 4096)
+                let n = CFReadStreamRead(read, &buf, 4096)
+                if n > 0 {
+                    response = String(bytes: buf[..<n], encoding: .utf8) ?? ""
+                }
+                CFReadStreamClose(read)
+                c.resume()
+            }
+        }
+        return response
+    }
+
+    /// Check if the ayeOS daemon is reachable.
+    var isReachable: Bool {
+        get async {
+            (try? await sendCommand("ping"))?.contains("pong") ?? false
+        }
+    }
+
+    /// Fetch the MEMNET capsule (ternary matrix metadata).
+    func capsule() async throws -> AyeosCapsule {
+        let resp = try await sendCommand("capsule")
+        guard let data = resp.data(using: .utf8),
+              let capsule = try? JSONDecoder().decode(AyeosCapsule.self, from: data)
+        else { throw AyeosError.invalidResponse }
+        return capsule
+    }
+
+    /// Fetch system stats.
+    func stats() async throws -> String {
+        try await sendCommand("stats")
+    }
+}
+
+// MARK: - entheai (agent subprocess)
+
+/// Error types for entheai agent communication.
+enum EntheaiError: LocalizedError, Sendable {
+    case notFound(String)
+    case executionError(String)
+    case timeout
+
+    var errorDescription: String? {
+        switch self {
+        case .notFound(let path): "entheai binary not found at \(path)"
+        case .executionError(let msg): "entheai error: \(msg)"
+        case .timeout: "entheai agent timed out"
+        }
+    }
+}
+
+/// entheai agent result.
+struct EntheaiResult: Decodable, Sendable {
+    let output: String
+    let tool_calls: Int?
+    let duration_ms: UInt64?
+}
+
+/// Client that runs entheai as a subprocess for agent tasks.
+/// Communicates via CLI args (one-shot mode) or stdin/stdout JSON-RPC.
+struct EntheaiClient: Sendable {
+    var binaryPath: String = "/usr/local/bin/entheai"
+    var timeoutSecs: UInt64 = 120
+
+    /// Run entheai with a prompt and optional flags.
+    func run(prompt: String, model: String? = nil, yolo: Bool = false) async throws -> EntheaiResult {
+        guard FileManager.default.isExecutableFile(atPath: binaryPath) else {
+            throw EntheaiError.notFound(binaryPath)
+        }
+        var args = ["--prompt", prompt]
+        if let model { args += ["--model", model] }
+        if yolo { args += ["--yolo"] }
+
+        let capturedArgs = args  // avoid Sendable capture warning
+        return try await withCheckedThrowingContinuation { c in
+            DispatchQueue.global().async {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: binaryPath)
+                process.arguments = capturedArgs
+
+                let outPipe = Pipe()
+                let errPipe = Pipe()
+                process.standardOutput = outPipe
+                process.standardError = errPipe
+
+                do {
+                    try process.run()
+                    let deadline = DispatchTime.now() + .seconds(Int(timeoutSecs))
+                    DispatchQueue.global().asyncAfter(deadline: deadline) {
+                        if process.isRunning {
+                            process.terminate()
+                            c.resume(throwing: EntheaiError.timeout)
+                        }
+                    }
+                    process.waitUntilExit()
+                    let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
+                    let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+                    let output = String(data: outData, encoding: .utf8) ?? ""
+                    let error = String(data: errData, encoding: .utf8) ?? ""
+                    if !error.isEmpty {
+                        c.resume(returning: EntheaiResult(output: output + "\n(stderr: \(error))", tool_calls: nil, duration_ms: nil))
+                    } else {
+                        c.resume(returning: EntheaiResult(output: output, tool_calls: nil, duration_ms: nil))
+                    }
+                } catch {
+                    c.resume(throwing: EntheaiError.executionError(error.localizedDescription))
+                }
+            }
+        }
+    }
+
+    /// Run entheai with fan-out decomposition.
+    func fanout(prompt: String) async throws -> EntheaiResult {
+        try await run(prompt: prompt, yolo: true)
+    }
+}
+
+// MARK: - Process lifecycle manager
+
+/// Manages lifecycle of companion subprocesses (entheai, ayeOS).
+/// Launches, monitors, and reports availability to the UI.
+@MainActor
+@Observable
+final class ProcessManager {
+    /// Whether entheai agent binary is available.
+    var entheaiAvailable = false
+    /// Whether ayeOS daemon binary is available.
+    var ayeosAvailable = false
+    /// Whether ayeOS is reachable on its TCP port.
+    var ayeosReachable = false
+    /// Status notes for the UI.
+    var note: String?
+
+    private let ayeosClient = AyeosClient()
+    private let entheaiClient: EntheaiClient
+
+    init(entheaiPath: String = "/usr/local/bin/entheai") {
+        self.entheaiClient = EntheaiClient(binaryPath: entheaiPath)
+        checkAvailability()
+    }
+
+    /// Check which binaries are available on disk.
+    func checkAvailability() {
+        entheaiAvailable = FileManager.default.isExecutableFile(atPath: entheaiClient.binaryPath)
+        ayeosAvailable = FileManager.default.isExecutableFile(atPath: "/usr/local/bin/ayeosd")
+    }
+
+    /// Check ayeOS reachability over MEMNET.
+    func checkAyeosReachability() async {
+        ayeosReachable = await ayeosClient.isReachable
+    }
+
+    /// Run entheai agent with a prompt.
+    func runEntheai(prompt: String, model: String? = nil) async -> String? {
+        guard entheaiAvailable else { note = "entheai binary not found"; return nil }
+        do {
+            let result = try await entheaiClient.run(prompt: prompt, model: model)
+            return result.output
+        } catch {
+            note = "entheai: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    /// Run entheai with fan-out decomposition.
+    func fanout(prompt: String) async -> String? {
+        guard entheaiAvailable else { note = "entheai binary not found"; return nil }
+        do {
+            let result = try await entheaiClient.fanout(prompt: prompt)
+            return result.output
+        } catch {
+            note = "entheai fanout: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    /// Fetch ayeOS genesis capsule metadata.
+    func ayeosCapsule() async -> AyeosCapsule? {
+        guard ayeosReachable else { return nil }
+        return try? await ayeosClient.capsule()
+    }
+}

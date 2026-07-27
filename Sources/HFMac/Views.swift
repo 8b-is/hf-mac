@@ -7,6 +7,7 @@ enum Tab: String, CaseIterable, Identifiable {
     case models = "Models"
     case run = "Run"
     case yours = "Yours"
+    case ecosystem = "Ecosystem"
     var id: String { rawValue }
     var icon: String {
         switch self {
@@ -15,6 +16,7 @@ enum Tab: String, CaseIterable, Identifiable {
         case .models: "cube.box"
         case .run: "bubble.left.and.text.bubble.right"
         case .yours: "person.crop.circle"
+        case .ecosystem: "circle.hexagongrid"
         }
     }
 }
@@ -59,6 +61,7 @@ struct ContentView: View {
                 case .models: ModelsView()
                 case .run: RunView()
                 case .yours: YoursView()
+                case .ecosystem: EcosystemView()
                 }
             }
             .toolbarBackground(Theme.glassBarMaterial, for: .windowToolbar)
@@ -690,6 +693,168 @@ struct SettingsView: View {
             .tint(Theme.accent)
         }
         .padding(24).frame(width: 480)
+    }
+}
+
+// MARK: - Ecosystem (entheai + ayeOS)
+
+struct EcosystemView: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        let pm = state.processManager
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Header
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("8b-is Stack").font(.title2.weight(.semibold))
+                    Text("hf.app · entheai · ayeOS · aligned")
+                        .font(.subheadline).foregroundStyle(Theme.dim)
+                }
+
+                // entheai agent
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "brain.head.profile")
+                            .foregroundStyle(pm.entheaiAvailable ? Theme.green : Theme.dim)
+                        Text("entheai agent").font(.headline)
+                        Spacer()
+                        StatusBadge(available: pm.entheaiAvailable)
+                    }
+                    Text(pm.entheaiAvailable
+                         ? "Binary available at /usr/local/bin/entheai. Fan-out decomposition ready."
+                         : "Install entheai to enable agent decomposition (cargo install --path bin/entheai).")
+                        .font(.caption).foregroundStyle(.secondary)
+
+                    if pm.entheaiAvailable {
+                        HStack(spacing: 12) {
+                            Button("Run Agent") {
+                                Task {
+                                    let prompt = "analyze the current project structure"
+                                    if let result = await pm.runEntheai(prompt: prompt) {
+                                        pm.note = result.prefix(200) + "..."
+                                    }
+                                }
+                            }
+                            .buttonStyle(.borderedProminent).tint(Theme.accent).controlSize(.small)
+                            Button("Fan-out") {
+                                Task {
+                                    let prompt = "review and improve code quality"
+                                    if let result = await pm.fanout(prompt: prompt) {
+                                        pm.note = result.prefix(200) + "..."
+                                    }
+                                }
+                            }
+                            .buttonStyle(.bordered).controlSize(.small)
+                        }
+                    }
+                }
+                .padding(16)
+                .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
+
+                // ayeOS ternary daemon
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "triangle")
+                            .foregroundStyle(pm.ayeosReachable ? Theme.green : .orange)
+                        Text("ayeOS ternary daemon").font(.headline)
+                        Spacer()
+                        StatusBadge(available: pm.ayeosAvailable, online: pm.ayeosReachable)
+                    }
+                    Text(pm.ayeosReachable
+                         ? "MEMNET reachable on :9876. LINOSV-seeded ternary matrices ready."
+                         : pm.ayeosAvailable
+                         ? "Binary available but daemon not running. Start with `ayeosd`."
+                         : "Install ayeOS (cargo install --path ../ayeos) for ternary inference.")
+                        .font(.caption).foregroundStyle(.secondary)
+
+                    if pm.ayeosReachable {
+                        Button("Fetch Capsule") {
+                            Task {
+                                if let capsule = await pm.ayeosCapsule() {
+                                    pm.note = "ayeOS: \(capsule.capsule_id) · \(capsule.payload_type) · score \(capsule.relevance_score)"
+                                }
+                            }
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                    } else if pm.ayeosAvailable {
+                        Button("Launch ayeOS") {
+                            Task {
+                                let process = Process()
+                                process.executableURL = URL(fileURLWithPath: "/usr/local/bin/ayeosd")
+                                try? process.run()
+                                try? await Task.sleep(for: .seconds(1))
+                                await pm.checkAyeosReachability()
+                            }
+                        }
+                        .buttonStyle(.borderedProminent).tint(Theme.accent).controlSize(.small)
+                    }
+
+                    if let note = pm.note {
+                        Text(note).font(.caption2).foregroundStyle(Theme.warn)
+                    }
+                }
+                .padding(16)
+                .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
+
+                // Integration map
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("integration map").font(.headline)
+                    IntegrationRow(icon: "bubble.left.and.text.bubble.right", name: "Osaurus", desc: "Local inference engine", status: state.osaurusReachable)
+                    IntegrationRow(icon: "brain.head.profile", name: "entheai MEM8", desc: "Wave interference recall", status: pm.entheaiAvailable)
+                    IntegrationRow(icon: "triangle", name: "ayeOS", desc: "Ternary matmul (12.80×)", status: pm.ayeosReachable)
+                    IntegrationRow(icon: "cube.box", name: "MLX-QUANT", desc: "Metal GPU ternary kernels", status: true)
+                    IntegrationRow(icon: "waveform.path", name: "MEM8 memory", desc: "\(state.memory.count) spans stored", status: state.memoryEnabled)
+                }
+                .padding(16)
+                .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
+            }
+            .padding(20)
+        }
+        .task {
+            await pm.checkAyeosReachability()
+        }
+    }
+}
+
+struct StatusBadge: View {
+    let available: Bool
+    var online: Bool?
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle().fill(online ?? available ? Theme.green : .orange).frame(width: 6, height: 6)
+            Text(online == true ? "online"
+                 : available ? "installed"
+                 : "missing")
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundStyle(online ?? available ? Theme.green : .orange)
+        }
+        .padding(.horizontal, 8).padding(.vertical, 3)
+        .background((online ?? available ? Theme.green : .orange).opacity(0.12), in: Capsule())
+    }
+}
+
+struct IntegrationRow: View {
+    let icon: String
+    let name: String
+    let desc: String
+    let status: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(status ? Theme.green : Theme.dim)
+                .frame(width: 20)
+            Text(name).font(.system(.subheadline, design: .monospaced))
+            Spacer()
+            Text(desc).font(.caption).foregroundStyle(Theme.dim)
+            Circle().fill(status ? Theme.green : Theme.warn).frame(width: 5, height: 5)
+        }
     }
 }
 

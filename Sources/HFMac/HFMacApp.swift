@@ -71,6 +71,9 @@ final class AppState {
     // Voice — preview engine (on-device Apple-native speech; ROADMAP: liquid-rust/kokoro sidecars)
     let voice = VoiceEngine()
 
+    // Process manager — entheai + ayeOS lifecycle
+    let processManager = ProcessManager()
+
     // Credentials (Keychain)
     var hfToken = ""
     var osaurusKey = ""
