@@ -28,6 +28,20 @@ struct HFMacApp: App {
     }
 }
 
+/// Which inference backend to use for chat.
+enum InferenceSource: String, CaseIterable, Identifiable, Sendable {
+    case local = "Osaurus (local)"
+    case remote = "coder.vaked.dev (free)"
+
+    var id: String { rawValue }
+    var icon: String {
+        switch self {
+        case .local: "macbook"
+        case .remote: "antenna.radiowaves.left.and.right"
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class AppState {
@@ -48,15 +62,22 @@ final class AppState {
     var mySpaces: [HFSpace] = []
     var myModels: [HubModel] = []
 
-    // Run (Osaurus)
+    // Run — inference source selector
+    var inferenceSource: InferenceSource = .local
+    // Osaurus (local)
     var osaurusModels: [OsaurusModel] = []
+    var osaurusReachable = true
+    var osaurusNote: String?
+    // Vaked (remote)
+    var vakedModels: [OsaurusModel] = []
+    var vakedReachable = false
+    var vakedNote: String?
+    // Shared
     var selectedModel = ""
     var chat: [ChatMessage] = []
     var prompt = ""
     var generating = false
     var genTask: Task<Void, Never>?
-    var osaurusReachable = true
-    var osaurusNote: String?
 
     // MoE Optimizer Layer
     var moeEnabled = true
@@ -89,12 +110,14 @@ final class AppState {
 
     private var hub: HubClient { HubClient(token: hfToken.isEmpty ? nil : hfToken) }
     private var osaurus: OsaurusClient { OsaurusClient(apiKey: osaurusKey.isEmpty ? nil : osaurusKey) }
+    private let vaked = VakedClient()
 
     func bootstrap() async {
         hfToken = Keychain.get("hf_token") ?? ""
         osaurusKey = Keychain.get("osaurus_key") ?? ""
         memory = EntheaiMemory.load()
         await refreshOsaurus()
+        await refreshVaked()
         await loadMine()
         // A friendly default: show the featured author's Spaces if empty.
         if spaces.isEmpty {
@@ -134,6 +157,21 @@ final class AppState {
         } catch {
             osaurusModels = []; osaurusReachable = false
             osaurusNote = "Osaurus not reachable on :1337 (set an API key in Settings if it requires one)."
+        }
+    }
+
+    func refreshVaked() async {
+        do {
+            vakedModels = try await vaked.models()
+            vakedReachable = true; vakedNote = nil
+            if selectedModel.isEmpty, !vakedModels.isEmpty {
+                selectedModel = vakedModels.first?.id ?? ""
+                // Default new users to the free remote tier
+                if !osaurusReachable { inferenceSource = .remote }
+            }
+        } catch {
+            vakedModels = []; vakedReachable = false
+            vakedNote = "coder.vaked.dev unreachable — you may be offline."
         }
     }
 
@@ -184,10 +222,11 @@ final class AppState {
         generating = true; defer { generating = false }
 
         let route: MoERouteResult
+        let availableModels = inferenceSource == .local ? osaurusModels : vakedModels
         if moeEnabled {
-            route = MoEOptimizer.optimize(prompt: text, chatHistory: chat, availableModels: osaurusModels)
+            route = MoEOptimizer.optimize(prompt: text, chatHistory: chat, availableModels: availableModels)
             activeDomain = route.domain
-            if let best = route.recommendedModelID, osaurusModels.contains(where: { $0.id == best }) {
+            if let best = route.recommendedModelID, availableModels.contains(where: { $0.id == best }) {
                 selectedModel = best
             }
         } else {
@@ -225,8 +264,14 @@ final class AppState {
             if let i = chat.lastIndex(where: { $0.id == msgId }) { chat[i].content = s }
         }
         var acc = ""
+        let stream: AsyncThrowingStream<String, Error>
+        if inferenceSource == .local {
+            stream = osaurus.chatStream(model: selectedModel, messages: fullMessages)
+        } else {
+            stream = vaked.chatStream(model: selectedModel, messages: fullMessages)
+        }
         do {
-            for try await piece in osaurus.chatStream(model: selectedModel, messages: fullMessages) {
+            for try await piece in stream {
                 acc += piece
                 writeBack(acc)
             }

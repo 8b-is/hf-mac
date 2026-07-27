@@ -275,6 +275,109 @@ struct OsaurusClient: Sendable {
     }
 }
 
+// MARK: - Vaked (coder.vaked.dev free inference)
+
+enum VakedError: LocalizedError, Sendable {
+    case httpError(Int)
+    case invalidResponse
+    case decodeError(Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .httpError(let code): "coder.vaked.dev HTTP \(code)."
+        case .invalidResponse: "Invalid response from coder.vaked.dev."
+        case .decodeError(let err): "Failed to parse coder.vaked.dev response: \(err.localizedDescription)"
+        }
+    }
+}
+
+let vakedBaseURL = URL(string: "https://coder.vaked.dev/v1")!
+
+/// coder.vaked.dev free inference — OpenAI-compatible, no key required.
+/// Serves Qwen3-Coder-30B and Qwen2.5-Coder-14B on CPU (free tier).
+struct VakedClient: Sendable {
+    var base: URL = vakedBaseURL
+
+    private func req(_ path: String, method: String = "GET") -> URLRequest {
+        var r = URLRequest(url: base.appending(path: path))
+        r.httpMethod = method
+        r.timeoutInterval = 60
+        return r
+    }
+
+    /// List available models on the remote node.
+    func models() async throws -> [OsaurusModel] {
+        let (data, resp) = try await URLSession.shared.data(for: req("/models"))
+        guard let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            let code = (resp as? HTTPURLResponse)?.statusCode ?? 500
+            throw VakedError.httpError(code)
+        }
+        // OpenAI-compatible model list: { object: "list", data: [{ id, object, created, owned_by }] }
+        struct VakedModelList: Decodable {
+            let data: [OsaurusModel]
+        }
+        do {
+            return try JSONDecoder().decode(VakedModelList.self, from: data).data
+        } catch {
+            throw VakedError.decodeError(error)
+        }
+    }
+
+    /// Non-streaming chat.
+    func chat(model: String, messages: [ChatMessage]) async throws -> String {
+        var r = req("/chat/completions", method: "POST")
+        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        r.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": model,
+            "messages": messages.map { ["role": $0.role, "content": $0.content] },
+            "stream": false,
+        ])
+        let (data, resp) = try await URLSession.shared.data(for: r)
+        guard let httpResp = resp as? HTTPURLResponse else { throw VakedError.invalidResponse }
+        guard httpResp.statusCode == 200 else { throw VakedError.httpError(httpResp.statusCode) }
+        let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let choices = obj?["choices"] as? [[String: Any]]
+        let msg = choices?.first?["message"] as? [String: Any]
+        return (msg?["content"] as? String) ?? "(no content)"
+    }
+
+    /// Streaming chat — SSE-compatible, same pattern as OsaurusClient.
+    func chatStream(model: String, messages: [ChatMessage]) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    var r = req("/chat/completions", method: "POST")
+                    r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    r.httpBody = try JSONSerialization.data(withJSONObject: [
+                        "model": model,
+                        "messages": messages.map { ["role": $0.role, "content": $0.content] },
+                        "stream": true,
+                    ])
+                    let (bytes, resp) = try await URLSession.shared.bytes(for: r)
+                    guard let http = resp as? HTTPURLResponse else { throw VakedError.invalidResponse }
+                    guard http.statusCode == 200 else { throw VakedError.httpError(http.statusCode) }
+                    for try await line in bytes.lines {
+                        guard line.hasPrefix("data:") else { continue }
+                        let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+                        if payload == "[DONE]" { break }
+                        guard let d = payload.data(using: .utf8),
+                              let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                              let choices = obj["choices"] as? [[String: Any]],
+                              let delta = choices.first?["delta"] as? [String: Any],
+                              let piece = delta["content"] as? String, !piece.isEmpty
+                        else { continue }
+                        continuation.yield(piece)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+}
+
 // MARK: - Articles (offline-first reader)
 
 struct Article: Identifiable, Hashable, Sendable {

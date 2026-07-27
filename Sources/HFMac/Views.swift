@@ -39,7 +39,7 @@ struct ContentView: View {
             .safeAreaInset(edge: .bottom) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
-                        Circle().fill(state.osaurusReachable ? Theme.green : Theme.warn).frame(width: 7, height: 7)
+                        Circle().fill(state.osaurusReachable || state.vakedReachable ? Theme.green : Theme.warn).frame(width: 7, height: 7)
                         Text(state.username.map { "@\($0)" } ?? "not signed in")
                             .font(.system(.caption2, design: .monospaced)).foregroundStyle(Theme.dim)
                         Spacer()
@@ -413,18 +413,29 @@ struct RunView: View {
         @Bindable var s = state
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text("Local model")
-                    .font(.system(.subheadline, design: .monospaced))
-                    .foregroundStyle(Theme.dim)
-                Picker("", selection: $s.selectedModel) { ForEach(state.osaurusModels) { Text($0.id).tag($0.id) } }
-                    .labelsHidden().frame(maxWidth: 240)
+                // Inference source selector — local Osaurus or remote coder.vaked.dev
+                Picker("", selection: $s.inferenceSource) {
+                    ForEach(InferenceSource.allCases) { src in
+                        Label(src.rawValue, systemImage: src.icon).tag(src)
+                    }
+                }
+                .labelsHidden().pickerStyle(.menu).frame(maxWidth: 200)
+
+                let models = state.inferenceSource == .local ? state.osaurusModels : state.vakedModels
+                Picker("", selection: $s.selectedModel) {
+                    ForEach(models) { Text($0.id).tag($0.id) }
+                }
+                    .labelsHidden().frame(maxWidth: 280)
                 let sp = ModelSpeed.of(state.selectedModel)
                 if !state.selectedModel.isEmpty, !sp.label.isEmpty {
                     Text(sp.label).font(.system(.caption2, design: .monospaced))
                         .foregroundStyle(sp.isFast ? Theme.green : Theme.dim)
                 }
-                Button { Task { await state.refreshOsaurus() } } label: { Image(systemName: "arrow.clockwise") }
-                    .help("Refresh local Osaurus models (⌘R)")
+                Button { Task {
+                    if state.inferenceSource == .local { await state.refreshOsaurus() }
+                    else { await state.refreshVaked() }
+                } } label: { Image(systemName: "arrow.clockwise") }
+                    .help("Refresh models (⌘R)")
                     .keyboardShortcut("r", modifiers: [.command])
                 
                 if !state.chat.isEmpty {
@@ -486,25 +497,42 @@ struct RunView: View {
                     .background(Theme.accent.opacity(0.12), in: Capsule())
                 }
 
-                if !state.osaurusReachable {
-                    Button("Retry Connection") { Task { await state.refreshOsaurus() } }
-                        .buttonStyle(.bordered)
-                        .tint(Theme.warn)
-                        .controlSize(.small)
-                } else {
-                    HStack(spacing: 6) {
-                        Circle().fill(Theme.green).frame(width: 7, height: 7)
-                        Text("on-device · Osaurus").font(.caption).foregroundStyle(.secondary)
+                if state.inferenceSource == .local {
+                    if !state.osaurusReachable {
+                        Button("Retry Connection") { Task { await state.refreshOsaurus() } }
+                            .buttonStyle(.bordered)
+                            .tint(Theme.warn)
+                            .controlSize(.small)
+                    } else {
+                        HStack(spacing: 6) {
+                            Circle().fill(Theme.green).frame(width: 7, height: 7)
+                            Text("on-device · Osaurus").font(.caption).foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(Theme.glassMaterial, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Theme.glassBorder))
                     }
-                    .padding(.horizontal, 10).padding(.vertical, 4)
-                    .background(Theme.glassMaterial, in: Capsule())
-                    .overlay(Capsule().strokeBorder(Theme.glassBorder))
+                } else {
+                    if !state.vakedReachable {
+                        Button("Retry Connection") { Task { await state.refreshVaked() } }
+                            .buttonStyle(.bordered)
+                            .tint(Theme.warn)
+                            .controlSize(.small)
+                    } else {
+                        HStack(spacing: 6) {
+                            Circle().fill(Theme.accent).frame(width: 7, height: 7)
+                            Text("coder.vaked.dev · free").font(.caption).foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(Theme.glassMaterial, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Theme.glassBorder))
+                    }
                 }
             }
             .padding(14)
             .background(Theme.glassBarMaterial)
 
-            if let n = state.osaurusNote {
+            if let n = state.inferenceSource == .local ? state.osaurusNote : state.vakedNote {
                 HStack {
                     Text(n).font(.caption).foregroundStyle(Theme.warn)
                     Spacer()
@@ -542,8 +570,13 @@ struct RunView: View {
                                 .font(.system(size: 40)).foregroundStyle(Theme.dim.opacity(0.7))
                             Text("Chat, locally").font(.title3.weight(.semibold)).foregroundStyle(Theme.fg)
                             if state.selectedModel.isEmpty {
-                                Text("Pull a model in the Models tab, then talk to it here — nothing leaves your Mac.")
-                                    .font(.callout).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+                        if state.inferenceSource == .local {
+                            Text("Pull a model in the Models tab, then talk to it here — nothing leaves your Mac.")
+                                .font(.callout).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+                        } else {
+                            Text("coder.vaked.dev should list models automatically. Try Refresh if empty.")
+                                .font(.callout).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+                        }
                             } else {
                                 let sp = ModelSpeed.of(state.selectedModel)
                                 Text(state.selectedModel + (sp.label.isEmpty ? "" : " · \(sp.label)"))
@@ -669,6 +702,14 @@ struct SettingsView: View {
                 SecureField("API key (if Osaurus requires one)", text: $s.osaurusKey)
                 Text("Only needed if Osaurus has auth enabled. Talks to localhost:1337.")
                     .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("coder.vaked.dev (remote free tier)") {
+                Text("No key needed — free community inference at coder.vaked.dev. Serves Qwen3-Coder-30B on CPU.")
+                    .font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Circle().fill(state.vakedReachable ? Theme.green : Theme.warn).frame(width: 6, height: 6)
+                    Text(state.vakedReachable ? "reachable" : "offline").font(.caption)
+                }
             }
             Section("Mixture of Experts (MoE)") {
                 Toggle("Enable MoE Intent Classifier & Auto-Router", isOn: $s.moeEnabled)
@@ -806,6 +847,7 @@ struct EcosystemView: View {
                     IntegrationRow(icon: "brain.head.profile", name: "entheai MEM8", desc: "Wave interference recall", status: pm.entheaiAvailable)
                     IntegrationRow(icon: "triangle", name: "ayeOS", desc: "Ternary matmul (12.80×)", status: pm.ayeosReachable)
                     IntegrationRow(icon: "cube.box", name: "MLX-QUANT", desc: "Metal GPU ternary kernels", status: true)
+                    IntegrationRow(icon: "antenna.radiowaves.left.and.right", name: "coder.vaked.dev", desc: "Free remote inference", status: state.vakedReachable)
                     IntegrationRow(icon: "waveform.path", name: "MEM8 memory", desc: "\(state.memory.count) spans stored", status: state.memoryEnabled)
                 }
                 .padding(16)
