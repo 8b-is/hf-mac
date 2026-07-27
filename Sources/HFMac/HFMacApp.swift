@@ -61,6 +61,7 @@ final class AppState {
     // MoE Optimizer Layer
     var moeEnabled = true
     var activeDomain: ExpertDomain = .general
+    private var moeSeededSystem: String?
 
     // MEM8 memory — wave recall engine (port of 8b-is MEM8 wave interference)
     var memoryEnabled = true
@@ -193,7 +194,17 @@ final class AppState {
         chat.append(ChatMessage(role: "user", content: text))
         prompt = ""
 
-        var fullMessages = route.formattedMessages
+        // Build the full message array without duplicating the system prompt.
+        // Keep the system prompt in a separate slot so it's not rendered in chat.
+        var fullMessages: [ChatMessage] = []
+        if moeEnabled, route.domain.systemPrompt != moeSeededSystem {
+            fullMessages.append(ChatMessage(role: "system", content: route.domain.systemPrompt))
+            moeSeededSystem = route.domain.systemPrompt
+        } else if let seeded = moeSeededSystem {
+            fullMessages.append(ChatMessage(role: "system", content: seeded))
+        }
+        fullMessages.append(contentsOf: chat)
+
         // MEM8 memory: recall relevant past spans via wave interference.
         if memoryEnabled, let (ctx, hits) = memory.contextMessage(for: text) {
             fullMessages.append(ctx)
@@ -245,6 +256,7 @@ final class AppState {
 
     func clearChat() {
         chat.removeAll()
+        moeSeededSystem = nil
     }
 
     func clearMemory() {
