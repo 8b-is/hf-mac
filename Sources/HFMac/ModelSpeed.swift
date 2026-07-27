@@ -7,12 +7,13 @@ import Foundation
 ///
 /// The frontier is **8b's MLX-QUANT** — native BitNet b1.58 *ternary* kernels
 /// (~1.58 bits, the rivaquant / quantal lineage): the fastest of all. As of
-/// **MLX-QUANT v1.0.0** the Metal **GPU** kernel is real (the fused
-/// `ternary_qmv_fast` for the `nn.Linear` decode shape), so the engine
-/// primitive the front-end was waiting on now exists; the last mile is Osaurus
-/// serving it through its `vmlx` MLX-QUANT path. hf.app is aligned and ready
-/// either way — it already badges and drives a ternary model the instant
-/// Osaurus lists one. See ROADMAP.
+/// **MLX-QUANT v1.4.2** the full ternary matmul path is fused on CPU + Metal
+/// **GPU** (`gather_qmm`, `ternary_qvm`, `ternary_qmv`, and a tiled
+/// `ternary_qmm_t` GEMM) — every `quantized_matmul` shape but batched weights.
+/// The engine is real; the last mile is Osaurus serving it (its Swift `vmlx`
+/// bindings, still deferred in MLX-QUANT). hf.app is aligned and ready either
+/// way — it already badges and drives a ternary model the instant Osaurus lists
+/// one. See ROADMAP.
 enum ModelSpeed: Int, Sendable, Comparable {
     case unknown = 0
     case full    = 1   // fp16 / bf16 / fp32 — full precision, slowest on-device

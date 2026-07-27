@@ -23,10 +23,12 @@ maps those gems to concrete integrations. 🜂 *ahogy a dolgok vannak.*
   on-device speed (`ModelSpeed`: ternary → MLX-4bit → quantized → full) with a
   badge + fast-model presets (MLX 4-bit · BitNet/ternary · GGUF), steering you
   onto models that run 2–4× faster in Osaurus. The ternary frontier — 8b's
-  **MLX-QUANT** (BitNet b1.58 / rivaquant / quantal) — landed its Metal **GPU**
-  kernel in **v1.0.0** (`ternary_qmv_fast`); the engine primitive now exists and
-  the last mile is Osaurus serving it (its `vmlx` MLX-QUANT path). hf.app already
-  badges and drives a ternary model the instant Osaurus lists one.
+  **MLX-QUANT** (BitNet b1.58 / rivaquant / quantal) — fused the full ternary
+  matmul path on CPU + Metal **GPU** as of **v1.4.2** (`gather_qmm`,
+  `ternary_qvm`, `ternary_qmv`, tiled `ternary_qmm_t`) — every `quantized_matmul`
+  shape but batched weights. The engine is real; the last mile is Osaurus serving
+  it (its Swift `vmlx` bindings, still deferred). hf.app already badges and
+  drives a ternary model the instant Osaurus lists one.
 - **v0.6.0 — Streaming chat.** Replies fill token-by-token at the model's real
   tokens/sec (OpenAI-compatible SSE via `OsaurusClient.chatStream`) instead of
   blocking on the whole answer — the point of local inference, made visible.
