@@ -291,6 +291,9 @@ struct Article: Identifiable, Hashable, Sendable {
 struct ArticleService: Sendable {
     static let sources: [(name: String, llms: URL)] = [
         ("pocoo", URL(string: "https://pocoo.vaked.dev/llms.txt")!),
+        ("8b public docs", URL(string: "https://8b.is/llms.txt")!),
+        ("entheai docs", URL(string: "https://entheai.com/llms.txt")!),
+        ("vaked docs", URL(string: "https://vaked.dev/llms.txt")!),
     ]
 
     func fetch() async -> [Article] {
