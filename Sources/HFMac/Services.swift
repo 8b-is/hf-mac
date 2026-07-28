@@ -721,6 +721,95 @@ struct HFMountClient: Sendable {
     }
 }
 
+// MARK: - Hugging Face Accelerate (distributed training/mixed precision)
+
+/// Error types for accelerate operations.
+enum AccelerateError: LocalizedError, Sendable {
+    case notFound
+    case executionError(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .notFound: "accelerate not found. pip install accelerate"
+        case .executionError(let msg): "accelerate error: \(msg)"
+        }
+    }
+}
+
+/// Accelerate device configuration.
+enum AccelerateDevice: String, Sendable {
+    case auto = "auto"
+    case cpu = "cpu"
+    case mps = "mps"       // Apple Metal Performance Shaders
+    case cuda = "cuda"
+}
+
+/// Wraps Hugging Face Accelerate (Python) for device-aware training/inference.
+/// Bridges Swift → Python subprocess → Metal via MPS backend.
+///
+/// Accelerate automatically handles:
+/// - Device placement (CPU / MPS / CUDA)
+/// - Mixed precision (fp16, bf16, fp8)
+/// - FSDP / DeepSpeed for multi-device
+/// - Gradient accumulation
+///
+/// Invoked as `python3 -m accelerate ...` with JSON serialization.
+struct AccelerateClient: Sendable {
+    var pythonPath: String = "/usr/bin/python3"
+    var device: AccelerateDevice = .mps
+
+    /// Check if accelerate is installed.
+    var isAvailable: Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: pythonPath)
+        process.arguments = ["-m", "accelerate", "--help"]
+        let pipe = Pipe()
+        process.standardError = pipe
+        guard (try? process.run()) != nil else { return false }
+        process.waitUntilExit()
+        return process.terminationStatus == 0
+    }
+
+    /// Run a training/inference script under accelerate.
+    /// - Parameters:
+    ///   - script: Python script path
+    ///   - args: Additional arguments passed to the script
+    ///   - config: Accelerate config overrides (device_placement, mixed_precision, etc.)
+    /// - Returns: stdout from the accelerate run
+    func run(script: String, args: [String] = [], config: [String: String] = [:]) async throws -> String {
+        guard isAvailable else { throw AccelerateError.notFound }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: pythonPath)
+
+        var accelerateArgs = ["-m", "accelerate", "launch"]
+        // Default to MPS on Apple Silicon
+        if device == .mps {
+            accelerateArgs += ["--cpu", "false", "--num_processes", "1"]
+        }
+        accelerateArgs += [script] + args
+        process.arguments = accelerateArgs
+
+        let outPipe = Pipe()
+        let errPipe = Pipe()
+        process.standardOutput = outPipe
+        process.standardError = errPipe
+
+        try process.run()
+        process.waitUntilExit()
+
+        let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
+        let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+        let output = String(data: outData, encoding: .utf8) ?? ""
+        let error = String(data: errData, encoding: .utf8) ?? ""
+
+        if process.terminationStatus != 0 {
+            throw AccelerateError.executionError(error.isEmpty ? output : error)
+        }
+        return output
+    }
+}
+
 // MARK: - Process lifecycle manager
 
 /// Manages lifecycle of companion subprocesses (entheai, ayeOS).

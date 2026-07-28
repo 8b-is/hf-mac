@@ -96,6 +96,8 @@ final class AppState {
     let processManager = ProcessManager()
     // hf-mount (HF repo filesystem mount)
     let hfMount = HFMountClient()
+    // HF Accelerate (distributed training/mixed precision via MPS)
+    let accelerate = AccelerateClient()
 
     // Credentials (Keychain)
     var hfToken = ""

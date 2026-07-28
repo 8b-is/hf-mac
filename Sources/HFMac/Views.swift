@@ -872,6 +872,7 @@ struct EcosystemView: View {
                     IntegrationRow(icon: "antenna.radiowaves.left.and.right", name: "coder.vaked.dev", desc: "Free remote inference", status: state.vakedReachable)
                     IntegrationRow(icon: "waveform.path", name: "MEM8 memory", desc: "\(state.memory.count) spans stored", status: state.memoryEnabled)
                     IntegrationRow(icon: "externaldrive.connected.to.line.below", name: "hf-mount", desc: "HF repos as local FS", status: state.hfMount.isAvailable)
+                    IntegrationRow(icon: "bolt.shield", name: "HF Accelerate", desc: "MPS training/inference", status: state.accelerate.isAvailable)
                 }
                 .padding(16)
                 .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
