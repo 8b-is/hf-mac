@@ -91,25 +91,28 @@ final class AppleVoiceBackend: VoiceBackend {
         isDictating = true
 
         task = recognizer.recognitionTask(with: req) { [weak self] result, error in
-            Task { @MainActor in
+            guard let self else { return }
+            Task { [weak self] in
                 guard let self else { return }
                 if let result {
                     self.transcript = result.bestTranscription.formattedString
                     self.transcriptHandler?(self.transcript)
                 }
-                if error != nil || (result?.isFinal ?? false) { Task { await self.stopDictation() } }
+                if error != nil || (result?.isFinal ?? false) {
+                    await self.stopDictation()
+                }
             }
         }
     }
 
     func stopDictation() async -> String {
         guard isDictating else { return transcript }
+        isDictating = false
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
         request?.endAudio()
         task?.cancel()
         task = nil; request = nil
-        isDictating = false
         return transcript
     }
 
@@ -134,8 +137,9 @@ final class ProcessVoiceBackend: VoiceBackend {
     private(set) var isDictating = false
 
     var available: Bool {
-        ttsPath.map { FileManager.default.isExecutableFile(atPath: $0) } ?? false ||
-        sttPath.map { FileManager.default.isExecutableFile(atPath: $0) } ?? false
+        let ttsOk = ttsPath.map { FileManager.default.isExecutableFile(atPath: $0) } ?? false
+        let sttOk = sttPath.map { FileManager.default.isExecutableFile(atPath: $0) } ?? false
+        return ttsOk || sttOk
     }
 
     var transcript = ""
