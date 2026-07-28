@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 /// hf.app's memory engine — MEM8 wave-based recall (Swift port).
 ///
@@ -99,10 +100,18 @@ extension MEM8Band {
 
     /// Add content-specific jitter within the band (±20% of band gap).
     func jitter(for text: String) -> Float {
-        let hash = abs(text.hashValue)
-        let bandSpan: Float = 100  // each band is ~100 Hz wide
+        let hash = Self.stableHash(text)
+        let bandSpan: Float = 100
         let j = Float(hash % 100) / 100 * bandSpan * 0.4 - bandSpan * 0.2
         return rawValue + j
+    }
+
+    /// Deterministic hash from text content (SHA-256 prefix).
+    /// Swift's `hashValue` uses random seed — not stable across launches.
+    static func stableHash(_ text: String) -> UInt64 {
+        let data = Data(text.utf8)
+        let hash = SHA256.hash(data: data)
+        return hash.withUnsafeBytes { $0.loadUnaligned(as: UInt64.self) }
     }
 }
 
@@ -113,10 +122,10 @@ extension MEM8Wave {
     init(kind: String, text: String, date: Date = Date()) {
         let band = MEM8Band.band(for: text)
         let frequency = band.jitter(for: text)
-        // Phase from text hash + time — ensures diverse superposition
-        let hash = Float(abs(text.hashValue & 0xFFFF)) / 65535
+        // Phase from stable content hash — deterministic across launches.
+        let hash = Float(MEM8Band.stableHash(text) & 0xFFFF) / 65535
         let phase = hash * 2 * Float.pi
-        // Amplitude: base 0.5, boosted by length cues (longer = more signal)
+        // Amplitude: base 0.3, boosted by length cues (longer = more signal)
         let length = Float(min(text.count, 2000)) / 2000
         let amplitude: Float = 0.3 + 0.7 * length.squareRoot()
 
