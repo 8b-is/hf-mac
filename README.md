@@ -1,4 +1,4 @@
-# 🜂 hf.app — Native macOS Hugging Face Client
+# 🜂 HF-MAC{-1,0,+1} — Native macOS Hugging Face Client
 
 ![hf.app Widescreen Flagship Header](assets/images/readme_hero.png)
 
@@ -8,8 +8,9 @@
 [![GitHub Pages](https://img.shields.io/badge/Docs-GH%20Pages-FFD21E?logo=github&logoColor=black)](https://8b-is.github.io/hf-mac/)
 [![Security Policy](https://img.shields.io/badge/Security-Policy-06B6D4?logo=shield&logoColor=white)](SECURITY.md)
 [![Contributing](https://img.shields.io/badge/Contributions-Welcome-8B5CF6?logo=github&logoColor=white)](CONTRIBUTING.md)
+[![Ternary](https://img.shields.io/badge/ternary-{-1,0,+1}-8B5CF6?logo=bitcoin&logoColor=white)](https://github.com/8b-is/MLX-QUANT)
 
-Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/osaurus-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. `hf.app` is the thin, honest native front-end — the unified macOS surface for the **8b-is stack**: Osaurus (inference), entheai (agent), MEM8 (wave memory), MLX-QUANT (ternary Metal kernels), and ayeOS (ternary inference daemon).
+Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/osaurus-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. **HF-MAC** is the thin, honest native front-end — the unified macOS surface for the **8b-is stack**: Osaurus (inference), entheai (agent), MEM8 (wave memory), MLX-QUANT (ternary Metal kernels), ayeOS (ternary daemon), HF Accelerate (MPS training), and hf-mount (repo filesystem).
 
 🌐 **Official Web Site & Documentation:** [https://8b-is.github.io/hf-mac/](https://8b-is.github.io/hf-mac/)
 

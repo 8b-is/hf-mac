@@ -10,12 +10,9 @@ import Foundation
 /// **MLX-QUANT v1.4.2** the full ternary matmul path is fused on CPU + Metal
 /// **GPU** (`gather_qmm`, `ternary_qvm`, `ternary_qmv`, and a tiled
 /// `ternary_qmm_t` GEMM) — every `quantized_matmul` shape but batched weights.
-/// The engine is real; the last mile is Osaurus serving it (its Swift `vmlx`
-/// bindings, still deferred in MLX-QUANT). **ayeOS** (`8b-is/ayeos`) bridges
-/// this gap as the ternary inference daemon — deterministic LINOSV-seeded
-/// matrices, MEMNET protocol capsule distribution, block-sparse matmul.
-/// hf.app is aligned and ready either way — it already badges and drives a
-/// ternary model the instant Osaurus (or ayeOS) lists one. See ROADMAP.
+/// **HF-MAC** unifies the stack: Osaurus (inference), entheai (agent), MEM8
+/// (wave memory), ayeOS (ternary daemon), MLX-QUANT (Metal kernels), and
+/// HF Accelerate (MPS training) — all under the {-1, 0, +1} ternary identity.
 enum ModelSpeed: Int, Sendable, Comparable {
     case unknown = 0
     case full    = 1   // fp16 / bf16 / fp32 — full precision, slowest on-device

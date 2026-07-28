@@ -33,7 +33,7 @@ struct ContentView: View {
                     .padding(.vertical, 2)
             }
             .listStyle(.sidebar)
-            .navigationTitle("hf.app")
+            .navigationTitle("HF-MAC")
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
             .background(Theme.glassMaterial)
             .safeAreaInset(edge: .bottom) {
@@ -44,7 +44,7 @@ struct ContentView: View {
                             .font(.system(.caption2, design: .monospaced)).foregroundStyle(Theme.dim)
                         Spacer()
                     }
-                    Text("🜂 ahogy a dolgok vannak")
+                    Text("{-1, 0, +1}")
                         .font(.system(size: 9, weight: .semibold, design: .monospaced))
                         .foregroundStyle(Theme.dim.opacity(0.7))
                 }
@@ -748,8 +748,8 @@ struct EcosystemView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Header
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("8b-is Stack").font(.title2.weight(.semibold))
-                    Text("hf.app · entheai · ayeOS · aligned")
+                    Text("HF-MAC {-1, 0, +1}").font(.title2.weight(.semibold))
+                    Text("hf-mac as the unified surface — ternary, quantal, aligned")
                         .font(.subheadline).foregroundStyle(Theme.dim)
                 }
 
@@ -862,6 +862,24 @@ struct EcosystemView: View {
                 .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
 
+                // HF Accelerate (MPS-accelerated training)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "bolt.shield")
+                            .foregroundStyle(state.accelerate.isAvailable ? Theme.green : Theme.dim)
+                        Text("HF Accelerate").font(.headline)
+                        Spacer()
+                        StatusBadge(available: state.accelerate.isAvailable, online: nil)
+                    }
+                    Text(state.accelerate.isAvailable
+                         ? "MPS-accelerated training on Apple Silicon. Mixed precision, device placement, FSDP."
+                         : "Install: pip install accelerate")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(16)
+                .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
+
                 // Integration map
                 VStack(alignment: .leading, spacing: 8) {
                     Text("integration map").font(.headline)
@@ -967,7 +985,7 @@ struct MenuBarView: View {
         @Bindable var s = state
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("🜂 hf.app").font(.headline)
+                Text("HF-MAC {-1, 0, +1}").font(.headline)
                 Spacer()
                 Picker("", selection: $s.selectedModel) { ForEach(state.osaurusModels) { Text($0.id).tag($0.id) } }
                     .labelsHidden().frame(maxWidth: 150)

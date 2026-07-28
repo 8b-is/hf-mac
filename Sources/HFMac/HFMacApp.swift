@@ -17,7 +17,7 @@ struct HFMacApp: App {
         }
         .defaultSize(width: 1140, height: 760)
 
-        MenuBarExtra("hf", systemImage: "brain.head.profile") {
+        MenuBarExtra("HF-MAC", systemImage: "brain.head.profile") {
             MenuBarView().environment(state).tint(Theme.accent).preferredColorScheme(.dark)
         }
         .menuBarExtraStyle(.window)
