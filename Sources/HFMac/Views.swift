@@ -844,6 +844,24 @@ struct EcosystemView: View {
                 .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
 
+                // hf-mount (HF repos as local filesystem)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "externaldrive.connected.to.line.below")
+                            .foregroundStyle(state.hfMount.isAvailable ? Theme.green : Theme.dim)
+                        Text("hf-mount").font(.headline)
+                        Spacer()
+                        StatusBadge(available: state.hfMount.isAvailable, online: nil)
+                    }
+                    Text(state.hfMount.isAvailable
+                         ? "Mount HF repos as local filesystems — zero download, lazy reads."
+                         : "Install hf-mount (brew install hf-mount) to mount repos as local filesystems.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(16)
+                .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
+
                 // Integration map
                 VStack(alignment: .leading, spacing: 8) {
                     Text("integration map").font(.headline)
@@ -853,6 +871,7 @@ struct EcosystemView: View {
                     IntegrationRow(icon: "cube.box", name: "MLX-QUANT", desc: "Metal GPU ternary kernels", status: true)
                     IntegrationRow(icon: "antenna.radiowaves.left.and.right", name: "coder.vaked.dev", desc: "Free remote inference", status: state.vakedReachable)
                     IntegrationRow(icon: "waveform.path", name: "MEM8 memory", desc: "\(state.memory.count) spans stored", status: state.memoryEnabled)
+                    IntegrationRow(icon: "externaldrive.connected.to.line.below", name: "hf-mount", desc: "HF repos as local FS", status: state.hfMount.isAvailable)
                 }
                 .padding(16)
                 .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))

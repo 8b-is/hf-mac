@@ -611,6 +611,116 @@ struct EntheaiClient: Sendable {
     }
 }
 
+// MARK: - hf-mount (Hugging Face FUSE/NFS filesystem)
+
+/// Error types for hf-mount operations.
+enum HFMountError: LocalizedError, Sendable {
+    case notFound(String)
+    case mountFailed(String)
+    case unmountFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .notFound(let path): "hf-mount not found at \(path)"
+        case .mountFailed(let msg): "mount failed: \(msg)"
+        case .unmountFailed(let msg): "unmount failed: \(msg)"
+        }
+    }
+}
+
+/// Status of a hf-mount mount point.
+struct HFMountStatus: Codable, Sendable {
+    let mount_point: String
+    let source: String
+    let backend: String  // "nfs" | "fuse"
+    let pid: Int?
+}
+
+/// Wraps the `hf-mount` CLI binary — mounts HF repos/buckets as local
+/// filesystems via FUSE or NFS. Lazily fetches files on first read.
+///
+/// Install: `brew install hf-mount` or download from GitHub Releases.
+struct HFMountClient: Sendable {
+    var binaryPath: String = "/opt/homebrew/bin/hf-mount"
+    var hfToken: String = ""
+
+    /// Check if hf-mount is installed.
+    var isAvailable: Bool {
+        FileManager.default.isExecutableFile(atPath: binaryPath)
+            || FileManager.default.isExecutableFile(atPath: "/usr/local/bin/hf-mount")
+            || FileManager.default.isExecutableFile(atPath: "/usr/bin/hf-mount")
+    }
+
+    /// Resolve the binary path.
+    private func resolveBinary() -> String? {
+        for path in [binaryPath, "/opt/homebrew/bin/hf-mount", "/usr/local/bin/hf-mount", "/usr/bin/hf-mount"] {
+            if FileManager.default.isExecutableFile(atPath: path) { return path }
+        }
+        return nil
+    }
+
+    /// Mount a HF repo as a local filesystem.
+    /// - Parameters:
+    ///   - repo: "owner/name" or "bucket owner/name"
+    ///   - mountPoint: local path to mount at
+    ///   - type: "repo" (read-only) or "bucket" (read-write)
+    ///   - backend: "nfs" (default) or "fuse"
+    /// - Returns: true if mount succeeded
+    func mount(repo: String, mountPoint: String, type: String = "repo", backend: String = "nfs") async throws -> Bool {
+        guard let bin = resolveBinary() else { throw HFMountError.notFound("hf-mount") }
+        var args = ["start", type, repo, mountPoint, "--backend", backend]
+        if !hfToken.isEmpty { args += ["--hf-token", hfToken] }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: bin)
+        process.arguments = args
+        let outPipe = Pipe()
+        process.standardOutput = outPipe
+
+        try process.run()
+        process.waitUntilExit()
+        return process.terminationStatus == 0
+    }
+
+    /// Unmount a previously mounted path.
+    func unmount(mountPoint: String) async throws {
+        guard let bin = resolveBinary() else { throw HFMountError.notFound("hf-mount") }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: bin)
+        process.arguments = ["stop", mountPoint]
+        try process.run()
+        process.waitUntilExit()
+        if process.terminationStatus != 0 {
+            throw HFMountError.unmountFailed("exit code \(process.terminationStatus)")
+        }
+    }
+
+    /// List active mount points.
+    func listMounts() async -> [HFMountStatus] {
+        guard let bin = resolveBinary() else { return [] }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: bin)
+        process.arguments = ["status"]
+        let outPipe = Pipe()
+        process.standardOutput = outPipe
+        guard (try? process.run()) != nil else { return [] }
+        process.waitUntilExit()
+        let data = outPipe.fileHandleForReading.readDataToEndOfFile()
+        let output = String(data: data, encoding: .utf8) ?? ""
+        // Parse "mount_point  source  backend  pid" lines
+        return output.split(separator: "\n").compactMap { line in
+            let parts = line.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+            guard parts.count >= 3 else { return nil }
+            return HFMountStatus(
+                mount_point: parts[0],
+                source: parts[1],
+                backend: parts[2],
+                pid: parts.count > 3 ? Int(parts[3]) : nil
+            )
+        }
+    }
+}
+
 // MARK: - Process lifecycle manager
 
 /// Manages lifecycle of companion subprocesses (entheai, ayeOS).

@@ -94,6 +94,8 @@ final class AppState {
 
     // Process manager — entheai + ayeOS lifecycle
     let processManager = ProcessManager()
+    // hf-mount (HF repo filesystem mount)
+    let hfMount = HFMountClient()
 
     // Credentials (Keychain)
     var hfToken = ""
