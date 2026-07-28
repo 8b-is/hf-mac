@@ -504,13 +504,22 @@ struct AyeosClient: Sendable {
         }
     }
 
-    /// Fetch the MEMNET capsule (ternary matrix metadata).
-    func capsule() async throws -> AyeosCapsule {
-        let resp = try await sendCommand("capsule")
+    /// Fetch a MEMNET capsule by name (default: genesis).
+    func capsule(named name: String = "genesis") async throws -> AyeosCapsule {
+        let resp = try await sendCommand("capsule \(name)")
         guard let data = resp.data(using: .utf8),
               let capsule = try? JSONDecoder().decode(AyeosCapsule.self, from: data)
         else { throw AyeosError.invalidResponse }
         return capsule
+    }
+
+    /// List all loaded capsules.
+    func listCapsules() async throws -> [String] {
+        let resp = try await sendCommand("list")
+        guard let data = resp.data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: [String]]
+        else { throw AyeosError.invalidResponse }
+        return obj["capsules"] ?? []
     }
 
     /// Fetch system stats.
@@ -661,9 +670,15 @@ final class ProcessManager {
         }
     }
 
-    /// Fetch ayeOS genesis capsule metadata.
-    func ayeosCapsule() async -> AyeosCapsule? {
+    /// Fetch ayeOS capsule metadata.
+    func ayeosCapsule(named name: String = "genesis") async -> AyeosCapsule? {
         guard ayeosReachable else { return nil }
-        return try? await ayeosClient.capsule()
+        return try? await ayeosClient.capsule(named: name)
+    }
+
+    /// List all loaded ayeOS capsules.
+    func ayeosCapsules() async -> [String] {
+        guard ayeosReachable else { return [] }
+        return (try? await ayeosClient.listCapsules()) ?? []
     }
 }
