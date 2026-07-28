@@ -886,6 +886,7 @@ struct EcosystemView: View {
                     IntegrationRow(icon: "bubble.left.and.text.bubble.right", name: "Osaurus", desc: "Local inference engine", status: state.osaurusReachable)
                     IntegrationRow(icon: "brain.head.profile", name: "entheai MEM8", desc: "Wave interference recall", status: pm.entheaiAvailable)
                     IntegrationRow(icon: "triangle", name: "ayeOS", desc: "Ternary matmul (12.80×)", status: pm.ayeosReachable)
+                    IntegrationRow(icon: "antenna.radiowaves.left.and.right", name: "FLUG-OS", desc: "802.11 packet-wave sampler", status: false)
                     IntegrationRow(icon: "cube.box", name: "MLX-QUANT", desc: "Metal GPU ternary kernels", status: true)
                     IntegrationRow(icon: "antenna.radiowaves.left.and.right", name: "coder.vaked.dev", desc: "Free remote inference", status: state.vakedReachable)
                     IntegrationRow(icon: "waveform.path", name: "MEM8 memory", desc: "\(state.memory.count) spans stored", status: state.memoryEnabled)
