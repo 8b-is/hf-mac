@@ -819,6 +819,10 @@ struct EcosystemView: View {
                             }
                         }
                         .buttonStyle(.bordered).controlSize(.small)
+
+                        // Show loaded capsules
+                        CapsuleListView()
+                            .environment(state)
                     } else if pm.ayeosAvailable {
                         Button("Launch ayeOS") {
                             Task {
@@ -859,6 +863,41 @@ struct EcosystemView: View {
         .task {
             await pm.checkAyeosReachability()
         }
+    }
+}
+
+/// Lists loaded ayeOS capsules fetched from the MEMNET daemon.
+struct CapsuleListView: View {
+    @Environment(AppState.self) private var state
+    @State private var capsules: [String] = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("loaded capsules").font(.subheadline.weight(.semibold))
+                Spacer()
+                Button("Refresh") {
+                    Task {
+                        capsules = await state.processManager.ayeosCapsules()
+                    }
+                }
+                .buttonStyle(.plain).font(.caption).foregroundStyle(Theme.accent)
+            }
+            if capsules.isEmpty {
+                Text("no trained capsules loaded").font(.caption).foregroundStyle(Theme.dim)
+            } else {
+                ForEach(capsules, id: \.self) { name in
+                    HStack {
+                        Image(systemName: "triangle").font(.caption).foregroundStyle(Theme.green)
+                        Text(name).font(.system(.caption, design: .monospaced))
+                        Spacer()
+                    }
+                    .padding(6)
+                    .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 6))
+                }
+            }
+        }
+        .task { capsules = await state.processManager.ayeosCapsules() ?? [] }
     }
 }
 
