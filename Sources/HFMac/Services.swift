@@ -897,3 +897,57 @@ final class ProcessManager {
         return (try? await ayeosClient.listCapsules()) ?? []
     }
 }
+
+// MARK: - Google Drive (the cloud lane)
+
+/// Google Drive client — list / download files via the Drive v3 API.
+/// Token held in Keychain ("google_drive_token"), never on disk in the clear.
+/// Read-only in v1 (list + fetch metadata); the upload lane is a follow-up.
+struct GoogleDriveClient: Sendable {
+    var token: String = ""
+
+    /// True when a Drive token is present (user connected the lane).
+    var isConnected: Bool { !token.isEmpty }
+
+    /// List the first `limit` files in the Drive root, name + mime + id.
+    func listFiles(limit: Int = 50) async throws -> [DriveFile] {
+        guard !token.isEmpty else { throw DriveError.notConnected }
+        var url = URLComponents(string: "https://www.googleapis.com/drive/v3/files")!
+        url.queryItems = [
+            URLQueryItem(name: "pageSize", value: String(limit)),
+            URLQueryItem(name: "fields", value: "files(id,name,mimeType,size)"),
+            URLQueryItem(name: "orderBy", value: "modifiedTime desc"),
+        ]
+        var req = URLRequest(url: url.url!)
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        guard let http = resp as? HTTPURLResponse, http.statusCode == 200 else {
+            throw DriveError.http((resp as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        struct List: Decodable { let files: [DriveFile] }
+        return try JSONDecoder().decode(List.self, from: data).files
+    }
+
+    /// Resolve the Drive token from the Keychain.
+    static func loadToken() -> String {
+        Keychain.get("google_drive_token") ?? ""
+    }
+}
+
+struct DriveFile: Decodable, Identifiable, Sendable {
+    let id: String
+    let name: String
+    let mimeType: String?
+    let size: String?
+}
+
+enum DriveError: LocalizedError {
+    case notConnected
+    case http(Int)
+    var errorDescription: String? {
+        switch self {
+        case .notConnected: "Google Drive not connected — set a token in Keychain."
+        case .http(let code): "Google Drive API returned HTTP \(code)."
+        }
+    }
+}
