@@ -217,13 +217,29 @@ struct OsaurusClient: Sendable {
             "messages": messages.map { ["role": $0.role, "content": $0.content] },
             "stream": false,
         ])
-        let (data, resp) = try await URLSession.shared.data(for: r)
-        guard let httpResp = resp as? HTTPURLResponse else { throw OsaurusError.invalidResponse }
-        guard httpResp.statusCode == 200 else { throw OsaurusError.httpError(httpResp.statusCode) }
-        let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        let choices = obj?["choices"] as? [[String: Any]]
-        let msg = choices?.first?["message"] as? [String: Any]
-        return (msg?["content"] as? String) ?? "(no content)"
+        let start = Date()
+        do {
+            let (data, resp) = try await URLSession.shared.data(for: r)
+            guard let httpResp = resp as? HTTPURLResponse else { throw OsaurusError.invalidResponse }
+            guard httpResp.statusCode == 200 else { throw OsaurusError.httpError(httpResp.statusCode) }
+            let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let choices = obj?["choices"] as? [[String: Any]]
+            let msg = choices?.first?["message"] as? [String: Any]
+            let output = (msg?["content"] as? String) ?? "(no content)"
+            trace(model: model, output: output, durationMs: Date().timeIntervalSince(start) * 1000, errorDescription: nil)
+            return output
+        } catch {
+            trace(model: model, output: nil, durationMs: Date().timeIntervalSince(start) * 1000, errorDescription: error.localizedDescription)
+            throw error
+        }
+    }
+
+    /// Fire-and-forget opt-in Langfuse trace — no-op unless env vars are set.
+    private func trace(model: String, output: String?, durationMs: Double, errorDescription: String?) {
+        guard LangfuseTracer.isEnabled else { return }
+        Task {
+            await LangfuseTracer.traceChat(model: model, inputTokens: nil, output: output, durationMs: durationMs, errorDescription: errorDescription)
+        }
     }
 
     /// Streaming chat — yields content deltas as the model generates them
