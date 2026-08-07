@@ -89,7 +89,26 @@ Sources/HFMac/
 
 ---
 
-## 🔀 Submitting Pull Requests
+##  Submitting Pull Requests
+
+### Primary upstream contribution targets (kapu-nélküli, no-CLA)
+
+The hf.app project is part of the wider constellation; the following
+upstream projects are the designated first-class contribution lanes —
+all no-CLA, external-PR-friendly:
+
+| Project | Lane | First issue type |
+|---|---|---|
+| [`huggingface/transformers`](https://github.com/huggingface/transformers) | Good First Issue | docs / bisect-grade bugfix |
+| [`safetensors/safetensors`](https://github.com/safetensors/safetensors) | good first issue | Rust+Python serialization |
+| [`huggingface/optimum`](https://github.com/huggingface/optimum) | good first issue | quant/export tooling |
+| [`ml-explore/mlx`](https://github.com/ml-explore/mlx) | good first issue | Metal kernel / dtype parity |
+| [`ggml-org/llama.cpp`](https://github.com/ggml-org/llama.cpp) | good first issue | GGUF converters / quant |
+| [`modelcontextprotocol/rust-sdk`](https://github.com/modelcontextprotocol/rust-sdk) | tracker | MCP transports / spec |
+| [`ast-grep/ast-grep`](https://github.com/ast-grep/ast-grep) | help wanted | control-flow ops / LSIF |
+
+Rule: disclose AI assistance in PR descriptions (several of these projects
+hard-close undisclosed agent-authored PRs). Human review before opening.
 
 ### Branch Naming
 Create a descriptive branch for your work:
