@@ -1,52 +1,50 @@
-# Reply draft — Dipankar Sarkar audit
+# Reply draft — Dipankar Sarkar audit, round 2
 
-**Where:** https://huggingface.co/posts/PeetPedro/262939583903899#6a7ad1d722a61d818f10ba35
+**Where:** https://huggingface.co/posts/PeetPedro/262939583903899#6a7b42a9b9514eaa75dd33aa
 
-**Status:** all four issues addressed in repos; fixes are live.
+**Status:** round-2 fixes live in the JSON + card (commits 0ed7497e / d5354664).
 
 ---
 
-Thanks — this is the most useful review the file has had. You're right on every
-point, and the fixes are live:
+Round 1's fixes are yours — the denominator split (8.1x = packed 2-bit layout,
+1.58 = log2(3) theory line), the device split, the ppl protocol, the 70B
+cross-check. You checked them live and they held. Round 2 is the harder one,
+and it is right too:
 
-**1. The denominator split (the real one).** You're correct that 8.1x and 1.58
-were sitting in the same object without saying what each one is. The JSON now
-labels both explicitly:
+**1. The throughput row — you caught the real problem.** Once the model is
+named, the row becomes checkable, and it fails:
 
-- **8.1x** is the measured memory reduction vs fp16 for the **packed 2-bit
-  layout** (16/2 = 8.0x + packing overhead). This is the headline — it is what
-  the kernel actually reads.
-- **1.58** is `log2(3)`, the information-theoretic entropy of one ternary
-  weight. It is the theory line, not the layout.
-- `16/1.58 = 10.13x` and `16/8.1 = 1.975 bits` are both real numbers about
-  b1.58; the file now derives each and says which denominator each column uses.
+```
+0.5e9 x 1.975 / 8 = 0.1234 GB weights/token
+384.2 / 0.1234 = 3,113 tok/s        (what the row implies)
+the row says      142.8 tok/s       (21.8x apart)
+```
 
-So: the Metal kernel packs at 2 bits. **8.1x is the honest headline; 1.58 is
-the theory line above it.** Exactly your recommendation.
+The honest reading: **142.8 tok/s is a 0.5B decode rate, and it is NOT
+memory-bound.** 0.1234 × 142.8 = 17.6 GB/s = **4.6% of the 384.2 peak**. At
+this size per-token overhead dominates, which is the normal situation for a
+half-billion-parameter model. The JSON and card now say exactly that:
+384.2 GB/s is a device ceiling, 142.8 tok/s is a 0.5B single-stream decode,
+and the 21.8x gap is headroom a larger model could spend — not a claim that
+this run is memory-bound.
 
-**2. Device split.** `metal_gpu_throughput` is now an array with one entry for
-M3 Max (384.2 GB/s, 142.8 tok/s, 0.5B quantal model, memory-bound decode). M4
-Pro is not folded into that number — different memory system.
+**2. The 70B row is a ceiling, not a scale-check.** You are right that putting
+"memory-bound decode" and "the 142.8 tok/s here is the 0.5B model" in the same
+bullet list cancelled each other. The card now separates them: the 70B row
+(17.28 GB/token → 22 tok/s at peak) is a hardware bound the 0.5B run is
+nowhere near, and it is labelled as such.
 
-**3. Perplexity protocol.** The block now names model (Qwen/Qwen2.5-0.5B
-BitNet b1.58 continued-train), parameter count, context length (256),
-tokenizer, and val split. The 5.42 row has something it can be wrong against
-now.
+**3. The corpora/val_split problem.** One held-out split from one file cannot
+be WikiText-2, C4 and LAMBADA. Correct — the three rows are **topic slices of
+the same training file** (the konstellation corpus used for the continued-
+train), not three external corpora. The protocol now says so explicitly, and
+each row label carries "(topic slice)". If read as external corpora the
+numbers would be invalid; read as slices of one file they are consistent.
 
-**4. The 70B cross-check, made explicit.** The file now computes it itself:
-70e9 × 1.975 bits / 8 = 17.28 GB weights/token → 384.2/17.28 ≈ **22 tok/s** at
-that bandwidth. The 142.8 tok/s is the 0.5B model, stated as such. Both can be
-true; the file now says which model produced which number.
+**4. The question you put on the front of the card.** What does 142.8 measure?
+It is the ternary Metal kernel decoding a 0.5B model at 4.6% of bandwidth —
+bound by per-token overhead, not by the weights. The interesting number in
+the file is therefore the **21.8x of headroom**, not the 8.1x. You are right
+about that too.
 
-**5. Repo vs post.** The dataset now has a card, and the post's "layer-by-layer
-weight sparsity & SVD energy decay" description was overstated — that payload
-lives in the follow-up export, not in this 717-byte JSON. The card now says
-exactly what the file holds.
-
-**6. axiom-quant-demo.** Was RUNTIME_ERROR: gradio 4.44 pulls pydub, whose
-`audioop` import died on Python 3.13. Bumped to gradio 6.22 (ships
-`audioop-lts`) and pinned python 3.11 in the space metadata. **Running now** —
-the quantization tab also uses the honest 2-bit packed layout instead of the
-1.58-as-memory number.
-
-Thanks again for the audit — it tightened the file.
+Thanks again — the second pass was the one that found the actual claim.
