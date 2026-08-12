@@ -19,8 +19,9 @@ jobs:
   release:
     # Blacksmith macOS runner (Apple Silicon M4) — drop-in for GitHub's macos-15,
     # ~2x faster / ~half the cost, native arm64 so `--arch arm64` builds locally.
-    # Fall back to `macos-15` if the Blacksmith GitHub App isn't installed yet.
-    runs-on: blacksmith-6vcpu-macos-15
+    # Blacksmith macOS runner unavailable as of 2026-08-12 (queued 1.5h+) —
+    # fall back to GitHub-hosted macos-15.
+    runs-on: macos-15
     permissions:
       contents: write
     steps:
