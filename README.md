@@ -57,7 +57,9 @@ Most AI desktop applications suffer from bloated electron wrappers, bundled Pyth
 | 🔺 **ayeOS Ternary Ready** | `ModelSpeed` badges ternary matrices at 12.80× compression via ayeOS MEMNET daemon. |
 | 🧠 **entheai Agent** | Spawn entheai subprocess for fan-out decomposition, code analysis, project-wide ops — Ecosystem tab. |
 | 🜂 **Ecosystem Tab** | Unified dashboard: Osaurus · entheai · ayeOS · MEM8 · MLX-QUANT — all status at a glance. |
-| 🌐 **Offline First** | Once local models are pulled into Osaurus, chat and prompt inference operate completely offline with no network requirement. |
+|  **Offline First** | Once local models are pulled into Osaurus, chat and prompt inference operate completely offline with no network requirement. |
+|  **HF Storage Buckets** | Native bucket management — create, sync, and stream training corpora with Xet dedup and the built-in CDN (`hf buckets`, `hf sync`). |
+|  **quantal-ternary ready** | The constellation's 0.5B BitNet b1.58 ternary model (masked val 0.5597) runs through the MLX-QUANT + ayeOS stack — 168 matrices, offline in Rust. |
 
 ![Privacy and On-Device Local Execution](assets/images/privacy_local_graphic.png)
 
