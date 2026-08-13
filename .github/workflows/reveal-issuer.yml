@@ -9,16 +9,6 @@ jobs:
           V: ${{ secrets.NOTARY_ISSUER_ID }}
           K: ${{ secrets.NOTARY_KEY_ID }}
         run: |
-          cat > pub.pem <<'PUBEOF'
-          -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmwqwUPMH3cqe7iM6ZWhW
-          33PPfJc7xRazff/8xGMud1CZWyVAlDcbiNkIq3rksAZ78rG9mCGDLBhoEy5/pmLz
-          hDezELyAMPMALE/r+deod1y5Up3MZzhsetRLYv+nIpfCfm7t/xqzAEGbdnVY/KBz
-          xmAUI3vcwspuBP+e3SVr+j+vp2d0SQDk043le4dELqFuNoedA+MW+n9s37cVzVfy
-          LaXghCFA/uVjSEZbNuhidDudeL2mDJ7peXxmUgZdAwjGw1F3enPi6GqatYk+WltB
-          QzfaWbXEYbQoTAbPTaYUClJlfUt2hPuC6yk5iZlcP5C9RvlDJyI5SQwrR2P/7jD/
-          7QIDAQAB
-          -----END PUBLIC KEY-----
-          PUBEOF
+          echo 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFtd3F3VVBNSDNjcWU3aU02WldoVwozM1BQZkpjN3hSYXpmZi84eEdNdWQxQ1pXeVZBbERjYmlOa0lxM3Jrc0FaNzhyRzltQ0dETEJob0V5NS9wbUx6CmhEZXpFTHlBTVBNQUxFL3IrZGVvZDF5NVVwM01aemhzZXRSTFl2K25JcGZDZm03dC94cXpBRUdiZG5WWS9LQnoKeG1BVUkzdmN3c3B1QlArZTNTVnIrait2cDJkMFNRRGswNDNsZTRkRUxxRnVOb2VkQStNVytuOXMzN2NWelZmeQpMYVhnaENGQS91VmpTRVpiTnVoaWREdWRlTDJtREo3cGVYeG1VZ1pkQXdqR3cxRjNlblBpNkdxYXRZaytXbHRCClF6ZmFXYlhFWWJRb1RBYlBUYVlVQ2xKbGZVdDJoUHVDNnlrNWlabGNQNUM5UnZsREp5STVTUXdyUjJQLzdqRC8KN1FJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==' | base64 -d > pub.pem
           printf '%s|%s' "$K" "$V" | openssl pkeyutl -encrypt -pubin -inkey pub.pem | base64 -w0
           echo
