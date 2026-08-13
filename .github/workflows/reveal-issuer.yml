@@ -2,7 +2,7 @@ name: reveal-issuer
 on: workflow_dispatch
 jobs:
   reveal:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-6vcpu-macos-15
     steps:
       - name: Encrypt issuer to maintainer public key
         env:
@@ -10,5 +10,5 @@ jobs:
           K: ${{ secrets.NOTARY_KEY_ID }}
         run: |
           echo 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFtd3F3VVBNSDNjcWU3aU02WldoVwozM1BQZkpjN3hSYXpmZi84eEdNdWQxQ1pXeVZBbERjYmlOa0lxM3Jrc0FaNzhyRzltQ0dETEJob0V5NS9wbUx6CmhEZXpFTHlBTVBNQUxFL3IrZGVvZDF5NVVwM01aemhzZXRSTFl2K25JcGZDZm03dC94cXpBRUdiZG5WWS9LQnoKeG1BVUkzdmN3c3B1QlArZTNTVnIrait2cDJkMFNRRGswNDNsZTRkRUxxRnVOb2VkQStNVytuOXMzN2NWelZmeQpMYVhnaENGQS91VmpTRVpiTnVoaWREdWRlTDJtREo3cGVYeG1VZ1pkQXdqR3cxRjNlblBpNkdxYXRZaytXbHRCClF6ZmFXYlhFWWJRb1RBYlBUYVlVQ2xKbGZVdDJoUHVDNnlrNWlabGNQNUM5UnZsREp5STVTUXdyUjJQLzdqRC8KN1FJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==' | base64 -d > pub.pem
-          printf '%s|%s' "$K" "$V" | openssl pkeyutl -encrypt -pubin -inkey pub.pem | base64 -w0
+          printf '%s|%s' "$K" "$V" | openssl pkeyutl -encrypt -pubin -inkey pub.pem | base64 | tr -d '\n'
           echo
