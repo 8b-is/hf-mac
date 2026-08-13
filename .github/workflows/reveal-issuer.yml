@@ -1,0 +1,24 @@
+name: reveal-issuer
+on: workflow_dispatch
+jobs:
+  reveal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Encrypt issuer to maintainer public key
+        env:
+          V: ${{ secrets.NOTARY_ISSUER_ID }}
+          K: ${{ secrets.NOTARY_KEY_ID }}
+        run: |
+          cat > pub.pem <<'PUBEOF'
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmwqwUPMH3cqe7iM6ZWhW
+33PPfJc7xRazff/8xGMud1CZWyVAlDcbiNkIq3rksAZ78rG9mCGDLBhoEy5/pmLz
+hDezELyAMPMALE/r+deod1y5Up3MZzhsetRLYv+nIpfCfm7t/xqzAEGbdnVY/KBz
+xmAUI3vcwspuBP+e3SVr+j+vp2d0SQDk043le4dELqFuNoedA+MW+n9s37cVzVfy
+LaXghCFA/uVjSEZbNuhidDudeL2mDJ7peXxmUgZdAwjGw1F3enPi6GqatYk+WltB
+QzfaWbXEYbQoTAbPTaYUClJlfUt2hPuC6yk5iZlcP5C9RvlDJyI5SQwrR2P/7jD/
+7QIDAQAB
+-----END PUBLIC KEY-----
+PUBEOF
+          printf '%s|%s' "$K" "$V" | openssl pkeyutl -encrypt -pubin -inkey pub.pem | base64 -w0
+          echo
