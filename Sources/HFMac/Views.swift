@@ -421,7 +421,7 @@ struct RunView: View {
                 }
                 .labelsHidden().pickerStyle(.menu).frame(maxWidth: 200)
 
-                let models = state.inferenceSource == .local ? state.osaurusModels : state.vakedModels
+                let models = state.activeModels
                 Picker("", selection: $s.selectedModel) {
                     ForEach(models) { Text($0.id).tag($0.id) }
                 }
@@ -431,10 +431,7 @@ struct RunView: View {
                     Text(sp.label).font(.system(.caption2, design: .monospaced))
                         .foregroundStyle(sp.isFast ? Theme.green : Theme.dim)
                 }
-                Button { Task {
-                    if state.inferenceSource == .local { await state.refreshOsaurus() }
-                    else { await state.refreshVaked() }
-                } } label: { Image(systemName: "arrow.clockwise") }
+                Button { Task { await state.refreshActive() } } label: { Image(systemName: "arrow.clockwise") }
                     .help("Refresh models (⌘R)")
                     .keyboardShortcut("r", modifiers: [.command])
                 
@@ -497,42 +494,26 @@ struct RunView: View {
                     .background(Theme.accent.opacity(0.12), in: Capsule())
                 }
 
-                if state.inferenceSource == .local {
-                    if !state.osaurusReachable {
-                        Button("Retry Connection") { Task { await state.refreshOsaurus() } }
-                            .buttonStyle(.bordered)
-                            .tint(Theme.warn)
-                            .controlSize(.small)
-                    } else {
-                        HStack(spacing: 6) {
-                            Circle().fill(Theme.green).frame(width: 7, height: 7)
-                            Text("on-device · Osaurus").font(.caption).foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Theme.glassMaterial, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Theme.glassBorder))
-                    }
+                if !state.activeReachable {
+                    Button("Retry Connection") { Task { await state.refreshActive() } }
+                        .buttonStyle(.bordered)
+                        .tint(Theme.warn)
+                        .controlSize(.small)
                 } else {
-                    if !state.vakedReachable {
-                        Button("Retry Connection") { Task { await state.refreshVaked() } }
-                            .buttonStyle(.bordered)
-                            .tint(Theme.warn)
-                            .controlSize(.small)
-                    } else {
-                        HStack(spacing: 6) {
-                            Circle().fill(Theme.accent).frame(width: 7, height: 7)
-                            Text("coder.vaked.dev · free").font(.caption).foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Theme.glassMaterial, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Theme.glassBorder))
+                    HStack(spacing: 6) {
+                        Circle().fill(state.inferenceSource == .remote ? Theme.accent : Theme.green)
+                            .frame(width: 7, height: 7)
+                        Text(state.inferenceSource.statusLabel).font(.caption).foregroundStyle(.secondary)
                     }
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .background(Theme.glassMaterial, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.glassBorder))
                 }
             }
             .padding(14)
             .background(Theme.glassBarMaterial)
 
-            if let n = state.inferenceSource == .local ? state.osaurusNote : state.vakedNote {
+            if let n = state.activeNote {
                 HStack {
                     Text(n).font(.caption).foregroundStyle(Theme.warn)
                     Spacer()
@@ -570,14 +551,9 @@ struct RunView: View {
                                 .font(.system(size: 40)).foregroundStyle(Theme.dim.opacity(0.7))
                             Text("Chat, locally").font(.title3.weight(.semibold)).foregroundStyle(Theme.fg)
                             if state.selectedModel.isEmpty {
-                        if state.inferenceSource == .local {
-                            Text("Pull a model in the Models tab, then talk to it here — nothing leaves your Mac.")
+                            Text(state.inferenceSource.emptyHint)
                                 .font(.callout).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
                         } else {
-                            Text("coder.vaked.dev should list models automatically. Try Refresh if empty.")
-                                .font(.callout).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
-                        }
-                            } else {
                                 let sp = ModelSpeed.of(state.selectedModel)
                                 Text(state.selectedModel + (sp.label.isEmpty ? "" : " · \(sp.label)"))
                                     .font(.system(.caption, design: .monospaced))
@@ -763,7 +739,7 @@ struct EcosystemView: View {
                         StatusBadge(available: pm.entheaiAvailable)
                     }
                     Text(pm.entheaiAvailable
-                         ? "Binary available at /usr/local/bin/entheai. Fan-out decomposition ready."
+                         ? "Binary available at \(pm.entheaiPath ?? "entheai"). Fan-out decomposition ready."
                          : "Install entheai to enable agent decomposition (cargo install --path bin/entheai).")
                         .font(.caption).foregroundStyle(.secondary)
 
@@ -804,9 +780,9 @@ struct EcosystemView: View {
                         StatusBadge(available: pm.ayeosAvailable, online: pm.ayeosReachable)
                     }
                     Text(pm.ayeosReachable
-                         ? "MEMNET reachable on :9876. LINOSV-seeded ternary matrices ready."
+                         ? "MEMNET reachable on the local socket (/tmp/ayeosd.sock). LINOSV-seeded ternary matrices ready."
                          : pm.ayeosAvailable
-                         ? "Binary available but daemon not running. Start with `ayeosd`."
+                         ? "Binary available at \(pm.ayeosPath ?? "ayeosd") but daemon not running. Start with `ayeosd`."
                          : "Install ayeOS (cargo install --path ../ayeos) for ternary inference.")
                         .font(.caption).foregroundStyle(.secondary)
 
@@ -880,12 +856,66 @@ struct EcosystemView: View {
                 .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
 
+                // MiroFish (swarm-intelligence prediction engine, over HTTP)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "brain")
+                            .foregroundStyle(state.miroFishReachable ? Theme.green : Theme.dim)
+                        Text("MiroFish").font(.headline)
+                        Spacer()
+                        StatusBadge(available: state.miroFishReachable, online: state.miroFishReachable)
+                    }
+                    Text(state.miroFishReachable
+                         ? "Swarm-intelligence prediction engine on :\(miroFishDefaultPort) — \(state.miroFishProjects.count) project\(state.miroFishProjects.count == 1 ? "" : "s"). Separate process (AGPL), spoken to over HTTP."
+                         : "Run `cd MiroFish && npm run dev` — a swarm-intelligence prediction engine (multi-agent simulation + knowledge graphs). hf.app talks to its backend on :\(miroFishDefaultPort) over HTTP.")
+                        .font(.caption).foregroundStyle(.secondary)
+
+                    HStack(spacing: 12) {
+                        Button("Refresh") { Task { await state.refreshMiroFish() } }
+                            .buttonStyle(.bordered).controlSize(.small)
+                        if state.miroFishReachable {
+                            Button("Open MiroFish") {
+                                if let url = URL(string: "http://127.0.0.1:\(miroFishFrontendPort)") {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }
+                            .buttonStyle(.borderedProminent).tint(Theme.accent).controlSize(.small)
+                        }
+                    }
+                }
+                .padding(16)
+                .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
+
+                // MOE-ptimizer (transparent OpenAI proxy — context optimization)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "arrow.triangle.branch")
+                            .foregroundStyle(state.moeptimizerReachable ? Theme.green : Theme.dim)
+                        Text("MOE-ptimizer").font(.headline)
+                        Spacer()
+                        StatusBadge(available: state.moeptimizerReachable, online: state.moeptimizerReachable)
+                    }
+                    Text(state.moeptimizerReachable
+                         ? "OpenAI-compatible context-optimizing proxy — \(state.moeptimizerModels.count) model\(state.moeptimizerModels.count == 1 ? "" : "s"). Byte-stable prefixes keep the backend's prefix cache warm."
+                         : "Run the proxy (`moeptimizer`, OpenAI-compatible on :8080 → your backend) for token savings in multi-turn agentic tasks. Select it as the Run source once up.")
+                        .font(.caption).foregroundStyle(.secondary)
+
+                    Button("Refresh") { Task { await state.refreshMoeptimizer() } }
+                        .buttonStyle(.bordered).controlSize(.small)
+                }
+                .padding(16)
+                .background(Theme.glassMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.glassBorder))
+
                 // Integration map
                 VStack(alignment: .leading, spacing: 8) {
                     Text("integration map").font(.headline)
                     IntegrationRow(icon: "bubble.left.and.text.bubble.right", name: "Osaurus", desc: "Local inference engine", status: state.osaurusReachable)
                     IntegrationRow(icon: "brain.head.profile", name: "entheai MEM8", desc: "Wave interference recall", status: pm.entheaiAvailable)
                     IntegrationRow(icon: "triangle", name: "ayeOS", desc: "Ternary matmul (12.80×)", status: pm.ayeosReachable)
+                    IntegrationRow(icon: "brain", name: "MiroFish", desc: "Swarm prediction (HTTP)", status: state.miroFishReachable)
+                    IntegrationRow(icon: "arrow.triangle.branch", name: "MOE-ptimizer", desc: "Context-optimizing proxy", status: state.moeptimizerReachable)
                     IntegrationRow(icon: "antenna.radiowaves.left.and.right", name: "FLUG-OS", desc: "802.11 packet-wave sampler", status: false)
                     IntegrationRow(icon: "cube.box", name: "MLX-QUANT", desc: "Metal GPU ternary kernels", status: true)
                     IntegrationRow(icon: "antenna.radiowaves.left.and.right", name: "coder.vaked.dev", desc: "Free remote inference", status: state.vakedReachable)
@@ -936,7 +966,7 @@ struct CapsuleListView: View {
                 }
             }
         }
-        .task { capsules = await state.processManager.ayeosCapsules() ?? [] }
+        .task { capsules = await state.processManager.ayeosCapsules() }
     }
 }
 

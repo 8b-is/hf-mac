@@ -2,6 +2,53 @@
 
 All notable changes to HF-MAC{-1,0,+1}.
 
+## [Unreleased]
+
+### Added
+- **Project Zero — local CPU ternary backend.** A third Run source:
+  [`shifulegend/project-zero`](https://github.com/shifulegend/project-zero),
+  a dependency-free C99 engine serving `{-1,0,+1}` inference on `:8090`.
+  `ProjectZeroClient` + `scripts/setup-project-zero.sh` + `docs/project-zero.md`.
+- **`HFMac --check-tools`** — a headless companion health check: resolves the
+  binaries, probes the ayeOS daemon over its socket, and prints the entheai argv.
+- **MiroFish connection** — connect to a local
+  [`666ghj/MiroFish`](https://github.com/666ghj/MiroFish) swarm-intelligence
+  prediction engine over HTTP (Flask `:5001`, Vue `:3000`). `MiroFishClient` +
+  an Ecosystem card; AGPL stays a separate process. `docs/mirofish.md`.
+- **MOE-ptimizer connection** — a fourth Run source: the transparent
+  OpenAI-compatible context-optimizing proxy
+  ([`peterlodri-sec/moeptimizer`](https://github.com/peterlodri-sec/moeptimizer),
+  default `:8080`). `docs/moeptimizer.md`.
+- **Landing Web Audio** — the hero's two wave systems (cyan mind · amber
+  anchor) are now audible: a gentle oscillator pair over a filtered creek
+  bed, pointer-shaped, opt-in via the nav **sound** toggle. Plus SOTA UX
+  polish (safe-area insets, focus rings, coarse-pointer targets).
+- **Landing reskin** — `docs/` is now an interactive surface (animated ternary
+  field, live MoE router demo, animated data-flow pipeline, reveals).
+- **`scripts/e2e-project-zero.sh`** — an end-to-end check of the Project Zero
+  lane (build → serve → probe the OpenAI surface). Verified against the live
+  engine: `models()` / `chat()` / `chatStream()` all match. Also records the
+  **ternary gap**: the loader rejects the 1.58-bit GGUF quant (type 36).
+
+### Fixed
+- **Companion detection** — the Ecosystem tab reported entheai / ayeOS /
+  hf-mount / HF Accelerate as missing. Paths were hardcoded to `/usr/local/bin`
+  (they live in `~/.cargo/bin`, `/opt/homebrew/bin`, the Python framework), and
+  the Developer-ID build was signed with `app-sandbox`, which cannot read those
+  paths or exec the children. A `Toolchain` resolver (PATH + known dirs + env
+  overrides) now backs every client, and the OSS build is sandbox-free.
+- **entheai launch** — the prompt must be **positional** (`--prompt` does not
+  exist), with `--fanout` / `--no-companion`; and a first-wins continuation
+  gate stops the timeout path and the completion path double-resuming (the
+  v0.12.0 background crash).
+- **ayeOS daemon** — the client dialed TCP:9876, but `ayeosd` binds a local
+  **UNIX socket** (`/tmp/ayeosd.sock`) under the AyeFire covenant (no IP).
+
+### Changed
+- `Packaging/Info.plist` `0.9.3 → 0.12.0`; entitlements split into
+  `hf-mac-devid.entitlements` (sandbox-free) and `hf-mac.entitlements` (App
+  Store), guarded by `scripts/check-entitlements.sh` (AMFI-safe).
+
 ## [0.12.0] — 2026-08-12
 
 ### Added

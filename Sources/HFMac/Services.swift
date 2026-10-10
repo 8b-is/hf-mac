@@ -1,5 +1,82 @@
 import Foundation
 
+// MARK: - Toolchain (locate locally-installed companions)
+
+/// Resolves the companion binaries hf.app drives as subprocesses — `entheai`,
+/// `ayeosd`, `hf-mount`, `python3`, `accelerate`. They rarely live in
+/// `/usr/local/bin`; on a real Mac they're in `~/.cargo/bin` (cargo install),
+/// `/opt/homebrew/bin` (brew), or the Python framework. PATH is the source of
+/// truth when the app runs unsandboxed, with a set of known-good fallbacks.
+///
+/// NOTE: under `app-sandbox` these paths are unreadable — the Developer-ID
+/// build signs with `Packaging/hf-mac-devid.entitlements` (no sandbox) so the
+/// subprocess lanes work; the sandbox stays for the App Store build.
+enum Toolchain {
+    /// Checked after `PATH`, in order. Covers cargo, brew (both prefixes),
+    /// user-local, the Python.org framework, and the system.
+    static let fallbackDirs: [String] = [
+        "\(NSHomeDirectory())/.cargo/bin",
+        "/opt/homebrew/bin",
+        "/usr/local/bin",
+        "\(NSHomeDirectory())/.local/bin",
+        "\(NSHomeDirectory())/.bun/bin",
+        "/Library/Frameworks/Python.framework/Versions/3.12/bin",
+    ]
+
+    private static func isExec(_ path: String) -> Bool {
+        FileManager.default.isExecutableFile(atPath: path)
+    }
+
+    /// Resolve an executable by name.
+    /// - Parameters:
+    ///   - name: the binary name (e.g. `"entheai"`).
+    ///   - override: an explicit path that wins if it exists.
+    ///   - env: an environment variable that holds an explicit path.
+    /// - Returns: the absolute path, or nil if not found.
+    static func which(_ name: String, override: String? = nil, env: String? = nil) -> String? {
+        if let override, !override.isEmpty, isExec(override) { return override }
+        if let env, let v = ProcessInfo.processInfo.environment[env], !v.isEmpty, isExec(v) { return v }
+        if let path = ProcessInfo.processInfo.environment["PATH"] {
+            for dir in path.split(separator: ":") {
+                let candidate = "\(dir)/\(name)"
+                if isExec(candidate) { return candidate }
+            }
+        }
+        for dir in fallbackDirs {
+            let candidate = "\(dir)/\(name)"
+            if isExec(candidate) { return candidate }
+        }
+        return nil
+    }
+
+    /// Resolve the first existing path from a list (for multi-name tools).
+    static func which(_ names: [String]) -> String? {
+        for n in names { if let p = which(n) { return p } }
+        return nil
+    }
+
+    /// A human-readable dump of every companion the Ecosystem tab reports on.
+    static func report() -> [(name: String, path: String)] {
+        let probes: [(String, [String])] = [
+            ("entheai", ["entheai"]),
+            ("ayeosd", ["ayeosd", "ayeos"]),
+            ("hf-mount", ["hf-mount", "hf_mount"]),
+            ("python3", ["python3"]),
+            ("accelerate", ["accelerate"]),
+        ]
+        return probes.map { (name, names) in
+            (name, which(names) ?? "— not found")
+        }
+    }
+
+    /// Print the report (used by `HFMac --check-tools`).
+    static func printReport() {
+        for row in report() {
+            print("\(row.name.padding(toLength: 12, withPad: " ", startingAt: 0)) \(row.path)")
+        }
+    }
+}
+
 // MARK: - Errors
 
 enum HubError: LocalizedError, Sendable {
@@ -394,6 +471,251 @@ struct VakedClient: Sendable {
     }
 }
 
+// MARK: - Project Zero (local CPU ternary inference)
+
+enum ProjectZeroError: LocalizedError, Sendable {
+    case httpError(Int)
+    case invalidResponse
+    case decodeError(Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .httpError(let code): "Project Zero HTTP \(code)."
+        case .invalidResponse: "Invalid response from the Project Zero engine."
+        case .decodeError(let err): "Failed to parse the Project Zero response: \(err.localizedDescription)"
+        }
+    }
+}
+
+/// Default port for the local engine. `8080` is taken on this Mac (litellm
+/// caddy), so Project Zero is seated on `8090` — matching `bridge/setup-project-zero.sh`.
+let projectZeroDefaultPort: UInt16 = 8090
+
+/// `shifulegend/project-zero` — a dependency-free C99 ternary (BitNet b1.58)
+/// CPU inference engine, served locally by `adaptive_ai_engine --model X.gguf
+/// --server --port 8090`. OpenAI-compatible, no key. The **C cousin** of the
+/// 8b-is stack: weights stay ternary the whole way, one scale at the end
+/// (see `docs/project-zero.md` and `8b-is-engine/docs/project-zero-bridge.md`).
+struct ProjectZeroClient: Sendable {
+    var base: URL
+
+    init(port: UInt16 = projectZeroDefaultPort, host: String = "127.0.0.1") {
+        self.base = URL(string: "http://\(host):\(port)/v1")!
+    }
+
+    private func req(_ path: String, method: String = "GET") -> URLRequest {
+        var r = URLRequest(url: base.appending(path: path))
+        r.httpMethod = method
+        r.timeoutInterval = 120          // CPU decode is slow; be patient, not wrong
+        return r
+    }
+
+    /// List models the running engine exposes (usually one: the loaded GGUF).
+    func models() async throws -> [OsaurusModel] {
+        let (data, resp) = try await URLSession.shared.data(for: req("/models"))
+        guard let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            let code = (resp as? HTTPURLResponse)?.statusCode ?? 500
+            throw ProjectZeroError.httpError(code)
+        }
+        struct ZeroModelList: Decodable { let data: [OsaurusModel] }
+        do {
+            return try JSONDecoder().decode(ZeroModelList.self, from: data).data
+        } catch {
+            throw ProjectZeroError.decodeError(error)
+        }
+    }
+
+    /// Non-streaming chat (OpenAI-compatible `/v1/chat/completions`).
+    func chat(model: String, messages: [ChatMessage]) async throws -> String {
+        var r = req("/chat/completions", method: "POST")
+        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        r.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": model,
+            "messages": messages.map { ["role": $0.role, "content": $0.content] },
+            "stream": false,
+        ])
+        let start = Date()
+        do {
+            let (data, resp) = try await URLSession.shared.data(for: r)
+            guard let httpResp = resp as? HTTPURLResponse else { throw ProjectZeroError.invalidResponse }
+            guard httpResp.statusCode == 200 else { throw ProjectZeroError.httpError(httpResp.statusCode) }
+            let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let choices = obj?["choices"] as? [[String: Any]]
+            let msg = choices?.first?["message"] as? [String: Any]
+            let output = (msg?["content"] as? String) ?? "(no content)"
+            trace(model: model, output: output, durationMs: Date().timeIntervalSince(start) * 1000, errorDescription: nil)
+            return output
+        } catch {
+            trace(model: model, output: nil, durationMs: Date().timeIntervalSince(start) * 1000, errorDescription: error.localizedDescription)
+            throw error
+        }
+    }
+
+    /// Fire-and-forget opt-in Langfuse trace — no-op unless env vars are set.
+    private func trace(model: String, output: String?, durationMs: Double, errorDescription: String?) {
+        guard LangfuseTracer.isEnabled else { return }
+        Task {
+            await LangfuseTracer.traceChat(model: model, inputTokens: nil, output: output, durationMs: durationMs, errorDescription: errorDescription)
+        }
+    }
+
+    /// Streaming chat — same SSE shape as `OsaurusClient`/`VakedClient`.
+    func chatStream(model: String, messages: [ChatMessage]) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    var r = req("/chat/completions", method: "POST")
+                    r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    r.httpBody = try JSONSerialization.data(withJSONObject: [
+                        "model": model,
+                        "messages": messages.map { ["role": $0.role, "content": $0.content] },
+                        "stream": true,
+                    ])
+                    let (bytes, resp) = try await URLSession.shared.bytes(for: r)
+                    guard let http = resp as? HTTPURLResponse else { throw ProjectZeroError.invalidResponse }
+                    guard http.statusCode == 200 else { throw ProjectZeroError.httpError(http.statusCode) }
+                    for try await line in bytes.lines {
+                        guard line.hasPrefix("data:") else { continue }
+                        let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+                        if payload == "[DONE]" { break }
+                        guard let d = payload.data(using: .utf8),
+                              let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                              let choices = obj["choices"] as? [[String: Any]],
+                              let delta = choices.first?["delta"] as? [String: Any],
+                              let piece = delta["content"] as? String, !piece.isEmpty
+                        else { continue }
+                        continuation.yield(piece)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    /// Where the built engine lands after `make release` in the repo. Returns
+    /// the first executable found under the usual build paths (nil if unbuilt).
+    static func engineBinary(in repoPath: String = "\(NSHomeDirectory())/project-zero") -> String? {
+        let root = URL(fileURLWithPath: repoPath)
+        let candidates = [
+            root.appending(path: "adaptive_ai_engine"),
+            root.appending(path: "build/adaptive_ai_engine"),
+            root.appending(path: "bin/adaptive_ai_engine"),
+        ]
+        return candidates.first { FileManager.default.isExecutableFile(atPath: $0.path) }?.path
+    }
+}
+
+// MARK: - MiroFish (swarm-intelligence prediction engine)
+
+enum MiroFishError: LocalizedError, Sendable {
+    case httpError(Int)
+    case invalidResponse
+    case decodeError(Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .httpError(let code): "MiroFish HTTP \(code)."
+        case .invalidResponse: "Invalid response from the MiroFish backend."
+        case .decodeError(let err): "Failed to parse the MiroFish response: \(err.localizedDescription)"
+        }
+    }
+}
+
+/// Default port for the local MiroFish Flask backend (`FLASK_PORT`, 5001).
+let miroFishDefaultPort: UInt16 = 5001
+/// The Vue frontend the user drives it from.
+let miroFishFrontendPort: UInt16 = 3000
+
+struct MiroFishProject: Identifiable, Hashable, Sendable {
+    let id: String
+    var name: String?
+
+    /// Lenient decode — MiroFish's list shape has varied across builds, so we
+    /// accept a bare array or one nested under projects/data/items.
+    static func decodeList(_ data: Data) -> [MiroFishProject] {
+        guard let any = try? JSONSerialization.jsonObject(with: data) else { return [] }
+        let rows: [[String: Any]]
+        if let a = any as? [[String: Any]] {
+            rows = a
+        } else if let d = any as? [String: Any] {
+            rows = (d["projects"] as? [[String: Any]])
+                ?? (d["data"] as? [[String: Any]])
+                ?? (d["items"] as? [[String: Any]])
+                ?? []
+        } else {
+            rows = []
+        }
+        return rows.enumerated().map { index, o in
+            let id = (o["id"] as? String)
+                ?? (o["project_id"] as? String)
+                ?? (o["graph_id"] as? String)
+                ?? "#\(index)"
+            let name = (o["name"] as? String) ?? (o["title"] as? String) ?? (o["requirement"] as? String)
+            return MiroFishProject(id: id, name: name)
+        }
+    }
+}
+
+/// `github.com/666ghj/MiroFish` — a swarm-intelligence prediction engine
+/// (multi-agent simulation + knowledge graphs over seeds). It runs as a
+/// **separate local service** — Flask backend on `:5001`, Vue frontend on
+/// `:3000` — so hf.app talks to it **over HTTP only**. MiroFish is AGPL-3.0
+/// and hf.app is MIT: the process boundary keeps the licenses apart, the same
+/// rule as mpv and steel-sky. See `docs/mirofish.md`.
+struct MiroFishClient: Sendable {
+    var base: URL
+
+    init(port: UInt16 = miroFishDefaultPort, host: String = "127.0.0.1") {
+        self.base = URL(string: "http://\(host):\(port)")!
+    }
+
+    private func req(_ path: String, method: String = "GET") -> URLRequest {
+        var r = URLRequest(url: base.appending(path: path))
+        r.httpMethod = method
+        r.timeoutInterval = 30
+        return r
+    }
+
+    /// True when the backend answers at all (any HTTP status counts).
+    var isReachable: Bool {
+        get async { (try? await status()) != nil }
+    }
+
+    /// The HTTP status of the project-list probe (any response → the server is up).
+    func status() async throws -> Int {
+        let (_, resp) = try await URLSession.shared.data(for: req("/api/graph/project/list"))
+        guard let http = resp as? HTTPURLResponse else { throw MiroFishError.invalidResponse }
+        return http.statusCode
+    }
+
+    /// The prediction projects (graph builds) the backend knows about.
+    func projects() async throws -> [MiroFishProject] {
+        let (data, resp) = try await URLSession.shared.data(for: req("/api/graph/project/list"))
+        guard let http = resp as? HTTPURLResponse, http.statusCode == 200 else {
+            throw MiroFishError.httpError((resp as? HTTPURLResponse)?.statusCode ?? 500)
+        }
+        return MiroFishProject.decodeList(data)
+    }
+
+    /// Kick off a graph build from a requirement + seed. Provisional — the exact
+    /// payload is MiroFish's to define; this is the shape its UI sends.
+    func build(requirement: String, seed: String) async throws -> String {
+        var r = req("/api/graph/build", method: "POST")
+        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        r.httpBody = try JSONSerialization.data(withJSONObject: [
+            "requirement": requirement,
+            "seed": seed,
+        ])
+        let (data, resp) = try await URLSession.shared.data(for: r)
+        guard let http = resp as? HTTPURLResponse else { throw MiroFishError.invalidResponse }
+        guard (200..<300).contains(http.statusCode) else { throw MiroFishError.httpError(http.statusCode) }
+        return String(data: data, encoding: .utf8) ?? ""
+    }
+}
+
 // MARK: - Articles (offline-first reader)
 
 struct Article: Identifiable, Hashable, Sendable {
@@ -475,42 +797,76 @@ struct AyeosCapsule: Decodable, Sendable {
     let timestamp: UInt64
 }
 
-/// ayeOS daemon client — MEMNET TCP protocol on :9876.
+/// ayeOS daemon client — MEMNET over the daemon's local **UNIX socket**
+/// (`/tmp/ayeosd.sock`, override `AYEOSD_SOCK`). The AyeFire covenant means
+/// there is no IP listener; `ayeosd` binds a local socket (no backdoor).
 /// Commands: ping, stats, capsule, get matrix.
 struct AyeosClient: Sendable {
-    var host = "127.0.0.1"
-    var port: UInt16 = 9876
+    /// The daemon's UNIX socket. ayeOS honours `AYEOSD_SOCK`; we mirror it.
+    /// (The AyeFire covenant means there is **no IP listener** — dialing
+    /// TCP:9876 is always "unreachable".)
+    var socketPath: String
 
-    /// Send a text command over TCP and return the response.
+    init(socketPath: String? = nil) {
+        self.socketPath = socketPath
+            ?? ProcessInfo.processInfo.environment["AYEOSD_SOCK"]
+            ?? "/tmp/ayeosd.sock"
+    }
+
+    /// Send a newline-terminated command over the daemon's UNIX socket and read
+    /// until it closes the connection (it writes the whole response, then drops
+    /// the stream). Unix domain sockets need a POSIX `AF_UNIX` connect —
+    /// `CFStream`'s host pair only does TCP.
     func sendCommand(_ cmd: String) async throws -> String {
-        var response = ""
-        try await withCheckedThrowingContinuation { (c: CheckedContinuation<Void, Error>) in
+        let path = socketPath
+        let command = cmd
+        return try await withCheckedThrowingContinuation { (c: CheckedContinuation<String, Error>) in
             DispatchQueue.global().async {
-                var readStream: Unmanaged<CFReadStream>?
-                var writeStream: Unmanaged<CFWriteStream>?
-                CFStreamCreatePairWithSocketToHost(nil, host as CFString, UInt32(port), &readStream, &writeStream)
-                guard let read = readStream?.takeRetainedValue(),
-                      let write = writeStream?.takeRetainedValue() else {
-                    c.resume(throwing: AyeosError.unreachable("stream creation failed"))
+                let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+                guard fd >= 0 else {
+                    c.resume(throwing: AyeosError.unreachable("socket() failed"))
                     return
                 }
-                let data = (cmd + "\n").data(using: .utf8)!
-                let wData = data as CFData
-                CFWriteStreamOpen(write)
-                CFWriteStreamWrite(write, CFDataGetBytePtr(wData), CFDataGetLength(wData))
-                CFWriteStreamClose(write)
+                defer { close(fd) }
 
-                CFReadStreamOpen(read)
-                var buf = [UInt8](repeating: 0, count: 4096)
-                let n = CFReadStreamRead(read, &buf, 4096)
-                if n > 0 {
-                    response = String(bytes: buf[..<n], encoding: .utf8) ?? ""
+                var addr = sockaddr_un()
+                addr.sun_family = sa_family_t(AF_UNIX)
+                let pathBytes = Array(path.utf8)
+                guard pathBytes.count < MemoryLayout.size(ofValue: addr.sun_path) else {
+                    c.resume(throwing: AyeosError.unreachable("socket path too long: \(path)"))
+                    return
                 }
-                CFReadStreamClose(read)
-                c.resume()
+                pathBytes.withUnsafeBufferPointer { src in
+                    withUnsafeMutablePointer(to: &addr.sun_path) { ptr in
+                        ptr.withMemoryRebound(to: UInt8.self, capacity: pathBytes.count) { dst in
+                            dst.update(from: src.baseAddress!, count: pathBytes.count)
+                        }
+                    }
+                }
+
+                let rc = withUnsafePointer(to: &addr) { a in
+                    a.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                        connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+                    }
+                }
+                guard rc == 0 else {
+                    c.resume(throwing: AyeosError.unreachable(String(cString: strerror(errno))))
+                    return
+                }
+
+                var payload = Array((command + "\n").utf8)
+                _ = payload.withUnsafeMutableBytes { write(fd, $0.baseAddress, $0.count) }
+
+                var response = Data()
+                var buf = [UInt8](repeating: 0, count: 65536)
+                while true {
+                    let n = read(fd, &buf, buf.count)
+                    if n <= 0 { break }
+                    response.append(contentsOf: buf[0..<n])
+                }
+                c.resume(returning: String(data: response, encoding: .utf8) ?? "")
             }
         }
-        return response
     }
 
     /// Check if the ayeOS daemon is reachable.
@@ -571,20 +927,55 @@ struct EntheaiResult: Decodable, Sendable {
 /// Client that runs entheai as a subprocess for agent tasks.
 /// Communicates via CLI args (one-shot mode) or stdin/stdout JSON-RPC.
 struct EntheaiClient: Sendable {
-    var binaryPath: String = "/usr/local/bin/entheai"
+    var binaryPath: String = Toolchain.which("entheai", env: "ENTHEAI_BIN") ?? "/usr/local/bin/entheai"
     var timeoutSecs: UInt64 = 120
 
+    /// Build the entheai argv. The prompt is **positional** (last); `--prompt`
+    /// does not exist. `--fanout` is a flag. Kept pure so it is unit-testable.
+    static func arguments(prompt: String, model: String? = nil, yolo: Bool = false, fanout: Bool = false, companion: Bool = false) -> [String] {
+        var args: [String] = []
+        if let model { args += ["--model", model] }
+        if yolo { args += ["--yolo"] }
+        if fanout { args += ["--fanout"] }
+        if !companion { args += ["--no-companion"] }
+        args.append(prompt)
+        return args
+    }
+
+    /// Gate for `run()`'s checked continuation: the timeout path and the
+    /// completion path race — `terminate()` unblocks `waitUntilExit()`, so
+    /// both would resume and trip Swift's "continuation resumed twice" trap
+    /// (the v0.12.0 background crash). First signal wins; the second is
+    /// dropped.
+    final class ContinuationGate: @unchecked Sendable {
+        private let lock = NSLock()
+        private var used = false
+
+        func resumeOnce(_ action: () -> Void) {
+            lock.lock()
+            if used {
+                lock.unlock()
+                return
+            }
+            used = true
+            lock.unlock()
+            action()
+        }
+    }
+
     /// Run entheai with a prompt and optional flags.
-    func run(prompt: String, model: String? = nil, yolo: Bool = false) async throws -> EntheaiResult {
+    ///
+    /// entheai takes the prompt **positionally** (`entheai [OPTIONS] [PROMPT]`),
+    /// not via `--prompt` — passing `--prompt` was the launch error. `--fanout`
+    /// is a flag, not a subcommand. `--no-companion` keeps the agent headless
+    /// (no WezTerm/Ghostty window) since we spawn it from the app.
+    func run(prompt: String, model: String? = nil, yolo: Bool = false, fanout: Bool = false, companion: Bool = false) async throws -> EntheaiResult {
         guard FileManager.default.isExecutableFile(atPath: binaryPath) else {
             throw EntheaiError.notFound(binaryPath)
         }
-        var args = ["--prompt", prompt]
-        if let model { args += ["--model", model] }
-        if yolo { args += ["--yolo"] }
-
-        let capturedArgs = args  // avoid Sendable capture warning
+        let capturedArgs = EntheaiClient.arguments(prompt: prompt, model: model, yolo: yolo, fanout: fanout, companion: companion)
         return try await withCheckedThrowingContinuation { c in
+            let gate = ContinuationGate()
             DispatchQueue.global().async {
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: binaryPath)
@@ -601,7 +992,7 @@ struct EntheaiClient: Sendable {
                     DispatchQueue.global().asyncAfter(deadline: deadline) {
                         if process.isRunning {
                             process.terminate()
-                            c.resume(throwing: EntheaiError.timeout)
+                            gate.resumeOnce { c.resume(throwing: EntheaiError.timeout) }
                         }
                     }
                     process.waitUntilExit()
@@ -610,12 +1001,13 @@ struct EntheaiClient: Sendable {
                     let output = String(data: outData, encoding: .utf8) ?? ""
                     let error = String(data: errData, encoding: .utf8) ?? ""
                     if !error.isEmpty {
-                        c.resume(returning: EntheaiResult(output: output + "\n(stderr: \(error))", tool_calls: nil, duration_ms: nil))
+                        let combined = output + "\n(stderr: \(error))"
+                        gate.resumeOnce { c.resume(returning: EntheaiResult(output: combined, tool_calls: nil, duration_ms: nil)) }
                     } else {
-                        c.resume(returning: EntheaiResult(output: output, tool_calls: nil, duration_ms: nil))
+                        gate.resumeOnce { c.resume(returning: EntheaiResult(output: output, tool_calls: nil, duration_ms: nil)) }
                     }
                 } catch {
-                    c.resume(throwing: EntheaiError.executionError(error.localizedDescription))
+                    gate.resumeOnce { c.resume(throwing: EntheaiError.executionError(error.localizedDescription)) }
                 }
             }
         }
@@ -623,7 +1015,7 @@ struct EntheaiClient: Sendable {
 
     /// Run entheai with fan-out decomposition.
     func fanout(prompt: String) async throws -> EntheaiResult {
-        try await run(prompt: prompt, yolo: true)
+        try await run(prompt: prompt, yolo: true, fanout: true)
     }
 }
 
@@ -657,22 +1049,17 @@ struct HFMountStatus: Codable, Sendable {
 ///
 /// Install: `brew install hf-mount` or download from GitHub Releases.
 struct HFMountClient: Sendable {
-    var binaryPath: String = "/opt/homebrew/bin/hf-mount"
+    var binaryPath: String = Toolchain.which("hf-mount", env: "HF_MOUNT_BIN") ?? "/opt/homebrew/bin/hf-mount"
     var hfToken: String = ""
 
-    /// Check if hf-mount is installed.
+    /// Check if hf-mount is installed (PATH + known dirs).
     var isAvailable: Bool {
-        FileManager.default.isExecutableFile(atPath: binaryPath)
-            || FileManager.default.isExecutableFile(atPath: "/usr/local/bin/hf-mount")
-            || FileManager.default.isExecutableFile(atPath: "/usr/bin/hf-mount")
+        Toolchain.which("hf-mount", override: binaryPath) != nil
     }
 
     /// Resolve the binary path.
     private func resolveBinary() -> String? {
-        for path in [binaryPath, "/opt/homebrew/bin/hf-mount", "/usr/local/bin/hf-mount", "/usr/bin/hf-mount"] {
-            if FileManager.default.isExecutableFile(atPath: path) { return path }
-        }
-        return nil
+        Toolchain.which("hf-mount", override: binaryPath)
     }
 
     /// Mount a HF repo as a local filesystem.
@@ -771,11 +1158,19 @@ enum AccelerateDevice: String, Sendable {
 ///
 /// Invoked as `python3 -m accelerate ...` with JSON serialization.
 struct AccelerateClient: Sendable {
-    var pythonPath: String = "/usr/bin/python3"
+    var pythonPath: String = Toolchain.which("python3", env: "PYTHON_BIN") ?? "/usr/bin/python3"
+    /// The `accelerate` console script, resolved directly when present — lets
+    /// `isAvailable` answer without spawning a probe subprocess.
+    var acceleratePath: String? = Toolchain.which("accelerate", env: "ACCELERATE_BIN")
     var device: AccelerateDevice = .mps
 
-    /// Check if accelerate is installed.
+    /// Check if accelerate is installed (the direct script, else `python -m`).
     var isAvailable: Bool {
+        if acceleratePath != nil { return true }
+        return pythonHasAccelerate
+    }
+
+    private var pythonHasAccelerate: Bool {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: pythonPath)
         process.arguments = ["-m", "accelerate", "--help"]
@@ -845,15 +1240,21 @@ final class ProcessManager {
     private let ayeosClient = AyeosClient()
     private let entheaiClient: EntheaiClient
 
-    init(entheaiPath: String = "/usr/local/bin/entheai") {
+    init(entheaiPath: String = Toolchain.which("entheai", env: "ENTHEAI_BIN") ?? "/usr/local/bin/entheai") {
         self.entheaiClient = EntheaiClient(binaryPath: entheaiPath)
         checkAvailability()
     }
 
-    /// Check which binaries are available on disk.
+    /// Resolved paths, for the Ecosystem tab (nil when the tool is absent).
+    var entheaiPath: String? { Toolchain.which("entheai", override: entheaiClient.binaryPath) }
+    var ayeosPath: String? { Toolchain.which(["ayeosd", "ayeos"]) }
+
+    /// Check which binaries are available on disk — resolved through PATH and
+    /// the usual local install dirs (~/.cargo/bin, /opt/homebrew/bin, …), not a
+    /// hardcoded /usr/local/bin.
     func checkAvailability() {
-        entheaiAvailable = FileManager.default.isExecutableFile(atPath: entheaiClient.binaryPath)
-        ayeosAvailable = FileManager.default.isExecutableFile(atPath: "/usr/local/bin/ayeosd")
+        entheaiAvailable = entheaiPath != nil
+        ayeosAvailable = ayeosPath != nil
     }
 
     /// Check ayeOS reachability over MEMNET.

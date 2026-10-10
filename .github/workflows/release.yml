@@ -39,6 +39,9 @@ jobs:
           cp Packaging/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
           chmod +x "$APP/Contents/MacOS/HFMac"
 
+      - name: Check entitlements (AMFI-safe)
+        run: bash scripts/check-entitlements.sh
+
       - name: Import Developer ID cert into a temporary keychain
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
@@ -58,8 +61,11 @@ jobs:
           IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
         run: |
           APP="dist/HFMac.app"
+          # Sandbox-free entitlements: the OSS build drives local companions
+          # (entheai, ayeosd, hf-mount, python3/accelerate) as subprocesses,
+          # which app-sandbox forbids. The App Store build keeps the sandbox.
           codesign --force --options runtime --timestamp --deep \
-            --entitlements Packaging/hf-mac.entitlements --sign "$IDENTITY" "$APP"
+            --entitlements Packaging/hf-mac-devid.entitlements --sign "$IDENTITY" "$APP"
           codesign --verify --strict --verbose=2 "$APP"
 
       - name: Notarize + staple

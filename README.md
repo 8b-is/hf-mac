@@ -10,7 +10,7 @@
 [![Contributing](https://img.shields.io/badge/Contributions-Welcome-8B5CF6?logo=github&logoColor=white)](CONTRIBUTING.md)
 [![Ternary](https://img.shields.io/badge/ternary-{-1,0,+1}-8B5CF6?logo=bitcoin&logoColor=white)](https://github.com/8b-is/MLX-QUANT)
 
-Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/osaurus-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. **HF-MAC** is the thin, honest native front-end — the unified macOS surface for the **8b-is stack**: Osaurus (inference), entheai (agent), MEM8 (wave memory), MLX-QUANT (ternary Metal kernels), ayeOS (ternary daemon), FLUG-OS (packet-wave sampler), HF Accelerate (MPS training), and hf-mount (repo filesystem).
+Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/osaurus-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. **HF-MAC** is the thin, honest native front-end — the unified macOS surface for the **8b-is stack**: Osaurus (inference), entheai (agent), MEM8 (wave memory), MLX-QUANT (ternary Metal kernels), ayeOS (ternary daemon), **Project Zero** (CPU ternary, C99), **MiroFish** (swarm prediction), **MOE-ptimizer** (context proxy), FLUG-OS (packet-wave sampler), HF Accelerate (MPS training), and hf-mount (repo filesystem).
 
 🌐 **Official Web Site & Documentation:** [https://8b-is.github.io/hf-mac/](https://8b-is.github.io/hf-mac/)
 
@@ -25,6 +25,8 @@ Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus]
 - [Codebase Structure](#-codebase-structure)
 - [Quick Start](#-quick-start)
 - [Osaurus Companion Setup](#-osaurus-companion-setup)
+- [Project Zero Companion Setup](#-project-zero-companion-setup)
+- [MiroFish Companion Setup](#-mirofish-companion-setup)
 - [Security & Data Sovereignty](#-security--data-sovereignty)
 - [Building & Distribution](#-building--distribution)
 - [Contributing & Community](#-contributing--community)
@@ -55,6 +57,8 @@ Most AI desktop applications suffer from bloated electron wrappers, bundled Pyth
 | 🔐 **Keychain Token Isolation** | Securely encrypt and store Hugging Face User Access Tokens in the system macOS Keychain using `Security.framework`. |
 | 🌊 **MEM8 Wave Memory** | On-device wave interference recall — MEM8 frequency-band classification with entheai-aligned scoring. Zero network. |
 | 🔺 **ayeOS Ternary Ready** | `ModelSpeed` badges ternary matrices at 12.80× compression via ayeOS MEMNET daemon. |
+| 🖥️ **Project Zero (CPU)** | A third Run backend — a dependency-free **C99** ternary engine ([`shifulegend/project-zero`](https://github.com/shifulegend/project-zero)) served locally on `:8090`. The same `{-1,0,+1}` law, no GPU. See [`docs/project-zero.md`](docs/project-zero.md). |
+| 🜂 **Local Liberty Models** | The sibling Strix Halo story — the halogen MoE, the quantize → abliterate → liberate → projectZeroify recipe, and the uncensored builds in the wild. See [`docs/liberty-models.md`](docs/liberty-models.md). |
 | 🧠 **entheai Agent** | Spawn entheai subprocess for fan-out decomposition, code analysis, project-wide ops — Ecosystem tab. |
 | 🜂 **Ecosystem Tab** | Unified dashboard: Osaurus · entheai · ayeOS · MEM8 · MLX-QUANT — all status at a glance. |
 |  **Offline First** | Once local models are pulled into Osaurus, chat and prompt inference operate completely offline with no network requirement. |
@@ -154,6 +158,20 @@ Or open in Xcode:
 open Package.swift
 ```
 
+### Companion health check
+
+hf.app drives local tools — `entheai`, `ayeosd`, `hf-mount`, `python3`/`accelerate`.
+See exactly what it resolves and whether the ayeOS daemon is up:
+
+```bash
+swift run HFMac --check-tools
+# companions · ayeOS daemon (over /tmp/ayeosd.sock) · the entheai argv it would run
+```
+
+The Ecosystem tab reports the same found/not-found state; `entheai` takes a
+**positional** prompt, and `ayeosd` binds a local **UNIX socket** (the AyeFire
+covenant — no IP listener).
+
 ---
 
 ## 🔌 Osaurus Companion Setup
@@ -164,6 +182,31 @@ open Package.swift
 2. Ensure Osaurus is listening on `http://localhost:1337`.
 3. Pull your desired model inside Osaurus (e.g. `llama3:8b`).
 4. Click **Refresh** in the **Run** tab of `hf.app` to instantly sync available local models.
+
+## 🖥️ Project Zero Companion Setup
+
+Project Zero is the **CPU** ternary backend — optional, and useful when you want
+`{-1,0,+1}` inference without touching the GPU:
+
+1. Build the engine and fetch a 1.58-bit model: `bash scripts/setup-project-zero.sh`.
+2. Start it: `~/project-zero/adaptive_ai_engine --model ~/models/*.gguf --server --port 8090`.
+3. In `hf.app` → **Run**, pick **Project Zero (CPU)** and **Refresh**.
+
+Full notes: [`docs/project-zero.md`](docs/project-zero.md).
+
+## 🧠 MiroFish Companion Setup
+
+[MiroFish](https://github.com/666ghj/MiroFish) is a **swarm-intelligence
+prediction engine** — it builds a parallel digital world of thousands of agents
+from seed material, then returns a prediction report. hf.app **connects** to it
+(it does not ship or link it — MiroFish is AGPL-3.0):
+
+1. Clone and run it: `git clone https://github.com/666ghj/MiroFish && cd MiroFish && npm run setup:all && npm run dev`.
+2. It serves a Flask backend on `:5001` and a Vue frontend on `:3000`.
+3. In `hf.app` → **Ecosystem**, MiroFish shows **connected**; **Open MiroFish**
+   opens the frontend.
+
+Full notes: [`docs/mirofish.md`](docs/mirofish.md).
 
 ---
 
