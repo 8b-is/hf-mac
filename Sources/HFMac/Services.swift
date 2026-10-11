@@ -906,12 +906,18 @@ struct AyeosClient: Sendable {
 enum EntheaiError: LocalizedError, Sendable {
     case notFound(String)
     case executionError(String)
+    case processFailed(status: Int32, diagnostic: String)
+    case terminated(signal: Int32, diagnostic: String)
     case timeout
 
     var errorDescription: String? {
         switch self {
         case .notFound(let path): "entheai binary not found at \(path)"
         case .executionError(let msg): "entheai error: \(msg)"
+        case .processFailed(let status, let diagnostic):
+            "entheai exited with status \(status)" + (diagnostic.isEmpty ? "" : ": \(diagnostic)")
+        case .terminated(let signal, let diagnostic):
+            "entheai terminated by signal \(signal)" + (diagnostic.isEmpty ? "" : ": \(diagnostic)")
         case .timeout: "entheai agent timed out"
         }
     }
@@ -991,8 +997,11 @@ struct EntheaiClient: Sendable {
                     let deadline = DispatchTime.now() + .seconds(Int(timeoutSecs))
                     DispatchQueue.global().asyncAfter(deadline: deadline) {
                         if process.isRunning {
-                            process.terminate()
-                            gate.resumeOnce { c.resume(throwing: EntheaiError.timeout) }
+                            gate.resumeOnce {
+                                // Claim the timeout before termination wakes the completion path.
+                                process.terminate()
+                                c.resume(throwing: EntheaiError.timeout)
+                            }
                         }
                     }
                     process.waitUntilExit()
@@ -1000,6 +1009,20 @@ struct EntheaiClient: Sendable {
                     let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
                     let output = String(data: outData, encoding: .utf8) ?? ""
                     let error = String(data: errData, encoding: .utf8) ?? ""
+                    let diagnostic = (error.isEmpty ? output : error)
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    if process.terminationReason == .uncaughtSignal {
+                        gate.resumeOnce {
+                            c.resume(throwing: EntheaiError.terminated(signal: process.terminationStatus, diagnostic: diagnostic))
+                        }
+                        return
+                    }
+                    guard process.terminationStatus == 0 else {
+                        gate.resumeOnce {
+                            c.resume(throwing: EntheaiError.processFailed(status: process.terminationStatus, diagnostic: diagnostic))
+                        }
+                        return
+                    }
                     if !error.isEmpty {
                         let combined = output + "\n(stderr: \(error))"
                         gate.resumeOnce { c.resume(returning: EntheaiResult(output: combined, tool_calls: nil, duration_ms: nil)) }
