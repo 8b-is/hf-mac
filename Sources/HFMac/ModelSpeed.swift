@@ -43,7 +43,7 @@ enum ModelSpeed: Int, Sendable, Comparable {
         let has4bit = s.contains("4bit") || s.contains("4-bit") || s.contains("q4") || s.contains("int4")
         if lib == "mlx" || s.contains("mlx") { return has4bit ? .mlx4bit : .quant }
         if has4bit || s.contains("gguf") || s.contains("awq") || s.contains("gptq") ||
-           s.contains("int8") || s.contains("q8") || s.contains("bnb") || s.contains("gptq") { return .quant }
+           s.contains("int8") || s.contains("q8") || s.contains("bnb") { return .quant }
         if s.contains("fp16") || s.contains("bf16") || s.contains("fp32") || s.contains("f16") { return .full }
         return .unknown
     }

@@ -409,7 +409,6 @@ final class AppState {
         } else {
             lastRecallCount = 0
         }
-        fullMessages.append(ChatMessage(role: "user", content: text))
 
         // Streaming assistant bubble — fills token-by-token at the model's real speed.
         let assistant = ChatMessage(role: "assistant", content: "")
