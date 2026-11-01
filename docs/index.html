@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>HF-MAC {-1, 0, +1} — Native macOS Hugging Face Client on Apple Silicon</title>
-  <meta name="description" content="HF-MAC: Browse the Hugging Face Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent. Unified surface for the 8b-is stack: entheai + ayeOS + MEM8 + MLX-QUANT + HF Accelerate + hf-mount. Ternary: {-1, 0, +1}.">
+  <meta name="description" content="HF-MAC: Browse the Hugging Face Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent. Unified surface for the 8b-is stack: entheai + deepsiper-enthea + ayeOS + MEM8 + MLX-QUANT + HF Accelerate + hf-mount. Ternary: {-1, 0, +1}.">
   <meta name="keywords" content="Hugging Face, macOS, Apple Silicon, M1, M2, M3, M4, Osaurus, local LLM, MLX, open-weight models, Swift, SwiftUI, on-device AI, privacy, MoE, Mixture of Experts, ternary, BitNet">
   <meta name="author" content="8b-is / vaked constellation">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#090d16">
-  <link rel="canonical" href="https://8b-is.github.io/hf-mac/">
+  <link rel="canonical" href="https://hf.8b.is/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🜂</text></svg>">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://8b-is.github.io/hf-mac/">
+  <meta property="og:url" content="https://hf.8b.is/">
   <meta property="og:title" content="HF-MAC {-1, 0, +1} — Native macOS Hugging Face Client on Apple Silicon">
   <meta property="og:description" content="HF-MAC: Browse the Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent. Unified surface for the 8b-is stack with ternary {-1, 0, +1} identity. entheai + ayeOS + MEM8 + MLX-QUANT + HF Accelerate + hf-mount.">
-  <meta property="og:image" content="https://8b-is.github.io/hf-mac/assets/images/og_image.png">
+  <meta property="og:image" content="https://hf.8b.is/assets/images/og_image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="hf.app — Native macOS Hugging Face Client on Apple Silicon Banner">
@@ -25,10 +25,10 @@
 
   <!-- Twitter Cards -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://8b-is.github.io/hf-mac/">
+  <meta name="twitter:url" content="https://hf.8b.is/">
   <meta name="twitter:title" content="HF-MAC {-1, 0, +1} — Native macOS Hugging Face Client on Apple Silicon">
   <meta name="twitter:description" content="HF-MAC: Browse the Hub, run models locally on Apple Silicon via Osaurus, and chat from a real window or menu-bar agent. Unified surface for the 8b-is stack with ternary {-1, 0, +1} identity.">
-  <meta name="twitter:image" content="https://8b-is.github.io/hf-mac/assets/images/og_image.png">
+  <meta name="twitter:image" content="https://hf.8b.is/assets/images/og_image.png">
 
   <!-- Structured Data / JSON-LD -->
   <script type="application/ld+json">
@@ -39,12 +39,12 @@
     "operatingSystem": "macOS 14.0+",
     "applicationCategory": "DeveloperApplication",
     "description": "Native macOS Hugging Face client on Apple Silicon. Browse the Hub, play Spaces, and run models locally via Osaurus.",
-    "downloadUrl": "https://github.com/8b-is/hf-mac/releases/tag/v0.12.0",
-    "softwareVersion": "0.12.0",
+    "downloadUrl": "https://github.com/8b-is/hf-mac/releases/latest",
+    "softwareVersion": "0.13.0",
     "author": {
       "@type": "Organization",
       "name": "8b-is / vaked constellation",
-      "url": "https://8b-is.github.io/hf-mac/"
+      "url": "https://hf.8b.is/"
     },
     "license": "https://opensource.org/licenses/MIT"
   }
@@ -98,7 +98,7 @@
         The ternary interface to <span class="gradient-text">Hugging Face</span>, on your Mac.
       </h1>
       <p class="hero-subtitle reveal">
-        The thin, honest macOS front-end for Hugging Face — a unified surface for the <strong>8b-is stack</strong>. Driven by <strong>Osaurus</strong> for MLX local inference, <strong>entheai</strong> for agent decomposition, <strong>MEM8</strong> for wave memory, <strong>ayeOS</strong> for ternary inference, <strong>MLX-QUANT</strong> for Metal kernels, <strong>HF&nbsp;Accelerate</strong> for MPS training, and <strong>hf-mount</strong> for repo filesystems — all under one ternary identity: <span class="tern-ink">{-1, 0, +1}</span>.
+        The thin, honest macOS front-end for Hugging Face — a unified surface for the <strong>8b-is stack</strong>. Driven by <strong>Osaurus</strong> for MLX local inference, <strong>entheai</strong> for agent decomposition, <strong>deepsiper-enthea</strong> for the sovereign agent harness, <strong>MEM8</strong> for wave memory, <strong>ayeOS</strong> for ternary inference, <strong>MLX-QUANT</strong> for Metal kernels, <strong>HF&nbsp;Accelerate</strong> for MPS training, and <strong>hf-mount</strong> for repo filesystems — all under one ternary identity: <span class="tern-ink">{-1, 0, +1}</span>.
       </p>
 
       <div class="hero-actions reveal">
@@ -109,7 +109,7 @@
         <a href="https://github.com/8b-is/hf-mac" class="btn btn-ghost" target="_blank" rel="noopener">View Source ↗</a>
       </div>
       <p class="hero-meta reveal">
-        <a href="https://github.com/8b-is/hf-mac/releases/download/v0.12.0/hf-mac-v0.12.0.dmg"><strong>v0.12.0</strong></a>
+        <a href="https://github.com/8b-is/hf-mac/releases/latest"><strong>v0.13.0</strong></a>
         · notarized &amp; stapled · Apple Silicon (arm64) · macOS 14 Sonoma+
       </p>
 
@@ -164,6 +164,7 @@
           <span>BitNet b1.58 · {-1, 0, +1}</span><span class="sep">🜂</span>
           <span>Project Zero · C99 CPU ternary</span><span class="sep">🜂</span>
           <span>MiroFish · swarm prediction</span><span class="sep">🜂</span>
+          <span>deepsiper-enthea · sovereign harness</span><span class="sep">🜂</span>
         </div>
       </div>
     </section>
@@ -230,6 +231,12 @@
             <div class="card-icon">🧠</div>
             <h3>MiroFish · Swarm Prediction</h3>
             <p>Connect to a local <a href="https://github.com/666ghj/MiroFish" target="_blank" rel="noopener">MiroFish</a> — a swarm-intelligence engine that simulates thousands of agents over seed material, then returns a prediction report. Backend <code>:5001</code>, over HTTP. AGPL stays a separate process. <a href="https://github.com/8b-is/hf-mac/blob/main/docs/mirofish.md" target="_blank" rel="noopener">wiring ↗</a></p>
+          </article>
+
+          <article class="card tilt reveal" data-icon="🜂">
+            <div class="card-icon">🜂</div>
+            <h3>deepsiper-enthea · Sovereign Harness</h3>
+            <p><a href="https://github.com/8b-is/deepsiper-enthea" target="_blank" rel="noopener">deepsiper-enthea</a> drives Osaurus through its <code>llm-osarous</code> provider seam. hf.app owns the weights and the MLX server on <code>localhost:1337</code>; the harness owns the agent loop, tools, and session log. <a href="https://github.com/8b-is/deepsiper-enthea" target="_blank" rel="noopener">wiring ↗</a></p>
           </article>
 
           <article class="card tilt reveal" data-icon="🎙️">
@@ -431,7 +438,7 @@
         <!-- Tab 1: Quick Start -->
         <div class="tab-content active" id="tab-quickstart">
           <h3>Install in under a minute</h3>
-          <p><strong>1 · Get the app.</strong> Download the <a href="https://github.com/8b-is/hf-mac/releases/latest" target="_blank" rel="noopener">latest&nbsp;.dmg (v0.12.0)</a>, open it, and drag <strong>hf.app</strong> into Applications. It's Developer-ID signed &amp; notarized, so it opens with no Gatekeeper warning — no <code>xattr</code> dance.</p>
+          <p><strong>1 · Get the app.</strong> Download the <a href="https://github.com/8b-is/hf-mac/releases/latest" target="_blank" rel="noopener">latest&nbsp;.dmg (v0.13.0)</a>, open it, and drag <strong>hf.app</strong> into Applications. It's Developer-ID signed &amp; notarized, so it opens with no Gatekeeper warning — no <code>xattr</code> dance.</p>
           <p><strong>2 · Get the engine.</strong> Install <a href="https://github.com/osaurus-ai/osaurus" target="_blank" rel="noopener">Osaurus</a> and start it on <code>localhost:1337</code>. hf.app is the thin front-end; Osaurus owns the weights, MLX, and serving.</p>
           <p><strong>3 · Pull &amp; run.</strong> Pull a model in Osaurus (Llama, Qwen, Phi…), then hit <strong>Refresh</strong> in the <em>Run</em> tab of hf.app. Real tokens/sec, fully on-device — your HF token stays in the macOS Keychain.</p>
 
@@ -601,7 +608,7 @@ open HFMac.xcodeproj       # ⌘R to run · Product ▸ Archive to package</code
               <span>RELEASE — TAG TO SHIP</span>
               <button class="copy-btn">Copy</button>
             </div>
-            <code>git tag v0.12.0
+            <code>git tag v0.13.0
 git push --tags      # → notarized .dmg on Releases</code>
           </div>
 
@@ -638,6 +645,7 @@ git push --tags      # → notarized .dmg on Releases</code>
         <span class="sep">· github ·</span>
         <a href="https://github.com/entropy-om/entheai" target="_blank" rel="noopener">entheai</a> ·
         <a href="https://github.com/8b-is/hf-mac" target="_blank" rel="noopener">hf-mac</a> ·
+        <a href="https://github.com/8b-is/deepsiper-enthea" target="_blank" rel="noopener">deepsiper-enthea</a> ·
         <a href="https://github.com/8b-is/ayeos" target="_blank" rel="noopener">ayeOS</a> ·
         <a href="https://github.com/8b-is/MLX-QUANT" target="_blank" rel="noopener">MLX-QUANT</a> ·
         <a href="https://github.com/8b-is/smart-tree" target="_blank" rel="noopener">smart-tree</a>

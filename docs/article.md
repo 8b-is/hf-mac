@@ -100,7 +100,7 @@ swift run
 
 `hf.app` is 100% open source under the MIT License.
 
-- **Official Website & Docs**: [https://8b-is.github.io/hf-mac/](https://8b-is.github.io/hf-mac/)
+- **Official Website & Docs**: [https://hf.8b.is/](https://hf.8b.is/)
 - **GitHub Repository**: [https://github.com/8b-is/hf-mac](https://github.com/8b-is/hf-mac)
 - **Security Policy**: [`SECURITY.md`](https://github.com/8b-is/hf-mac/blob/main/SECURITY.md)
 - **Contributing Guide**: [`CONTRIBUTING.md`](https://github.com/8b-is/hf-mac/blob/main/CONTRIBUTING.md)

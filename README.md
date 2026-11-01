@@ -5,14 +5,14 @@
 [![Swift](https://img.shields.io/badge/Swift-5.9+-FA7343?logo=swift&logoColor=white)](https://swift.org)
 [![macOS](https://img.shields.io/badge/macOS-14.0+%20(Sonoma)-000000?logo=apple&logoColor=white)](https://apple.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![GitHub Pages](https://img.shields.io/badge/Docs-GH%20Pages-FFD21E?logo=github&logoColor=black)](https://8b-is.github.io/hf-mac/)
+[![GitHub Pages](https://img.shields.io/badge/Docs-GH%20Pages-FFD21E?logo=github&logoColor=black)](https://hf.8b.is/)
 [![Security Policy](https://img.shields.io/badge/Security-Policy-06B6D4?logo=shield&logoColor=white)](SECURITY.md)
 [![Contributing](https://img.shields.io/badge/Contributions-Welcome-8B5CF6?logo=github&logoColor=white)](CONTRIBUTING.md)
 [![Ternary](https://img.shields.io/badge/ternary-{-1,0,+1}-8B5CF6?logo=bitcoin&logoColor=white)](https://github.com/8b-is/MLX-QUANT)
 
-Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/osaurus-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. **HF-MAC** is the thin, honest native front-end — the unified macOS surface for the **8b-is stack**: Osaurus (inference), entheai (agent), MEM8 (wave memory), MLX-QUANT (ternary Metal kernels), ayeOS (ternary daemon), **Project Zero** (CPU ternary, C99), **MiroFish** (swarm prediction), **MOE-ptimizer** (context proxy), FLUG-OS (packet-wave sampler), HF Accelerate (MPS training), and hf-mount (repo filesystem).
+Browse the Hugging Face Hub, run models **locally on Apple Silicon via [Osaurus](https://github.com/osaurus-ai/osaurus)**, and chat from a real workspace window *or* a menu-bar quick agent. **HF-MAC** is the thin, honest native front-end — the unified macOS surface for the **8b-is stack**: Osaurus (inference), entheai (agent), **[deepsiper-enthea](https://github.com/8b-is/deepsiper-enthea)** (sovereign agent harness), MEM8 (wave memory), MLX-QUANT (ternary Metal kernels), ayeOS (ternary daemon), **Project Zero** (CPU ternary, C99), **MiroFish** (swarm prediction), **MOE-ptimizer** (context proxy), FLUG-OS (packet-wave sampler), HF Accelerate (MPS training), and hf-mount (repo filesystem).
 
-🌐 **Official Web Site & Documentation:** [https://8b-is.github.io/hf-mac/](https://8b-is.github.io/hf-mac/)
+🌐 **Official Web Site & Documentation:** [https://hf.8b.is/](https://hf.8b.is/)
 
 ---
 

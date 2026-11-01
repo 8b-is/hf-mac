@@ -5,6 +5,12 @@ All notable changes to HF-MAC{-1,0,+1}.
 ## [Unreleased]
 
 ### Added
+- **deepsiper-enthea wiring.** The sovereign agent harness
+  ([`8b-is/deepsiper-enthea`](https://github.com/8b-is/deepsiper-enthea))
+  reaches hf.app's Osaurus server through its `llm-osarous` provider seam on
+  `localhost:1337`. hf.app keeps ownership of weights and MLX serving; the
+  harness owns the agent loop, tools, and session log. Landing page, README,
+  and the stack marquee now name the seam.
 - **Project Zero — local CPU ternary backend.** A third Run source:
   [`shifulegend/project-zero`](https://github.com/shifulegend/project-zero),
   a dependency-free C99 engine serving `{-1,0,+1}` inference on `:8090`.
@@ -29,6 +35,12 @@ All notable changes to HF-MAC{-1,0,+1}.
   lane (build → serve → probe the OpenAI surface). Verified against the live
   engine: `models()` / `chat()` / `chatStream()` all match. Also records the
   **ternary gap**: the loader rejects the 1.58-bit GGUF quant (type 36).
+
+### Changed
+- **Landing page domain.** Canonical, Open Graph, Twitter, JSON-LD, and README
+  links now use `https://hf.8b.is/`; `docs/CNAME` pins the GitHub Pages custom
+  domain. Version bumped to `0.13.0` (`project.yml` + `Packaging/Info.plist`),
+  and download CTAs follow `releases/latest` so they survive the tag.
 
 ### Fixed
 - **Companion detection** — the Ecosystem tab reported entheai / ayeOS /
