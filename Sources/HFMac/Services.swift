@@ -59,6 +59,7 @@ enum Toolchain {
     static func report() -> [(name: String, path: String)] {
         let probes: [(String, [String])] = [
             ("entheai", ["entheai"]),
+            ("dsh", ["dsh"]),
             ("ayeosd", ["ayeosd", "ayeos"]),
             ("hf-mount", ["hf-mount", "hf_mount"]),
             ("python3", ["python3"]),

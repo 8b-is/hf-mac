@@ -26,8 +26,8 @@ options:
 
 settings:
   base:
-    MARKETING_VERSION: "0.14.0"     # CFBundleShortVersionString (kept == Info.plist)
-    CURRENT_PROJECT_VERSION: "1"    # CFBundleVersion / build number
+    MARKETING_VERSION: "0.15.0"     # CFBundleShortVersionString (kept == Info.plist)
+    CURRENT_PROJECT_VERSION: "2"    # CFBundleVersion / build number
     SWIFT_VERSION: "6.0"            # Swift 6 language mode (matches Package.swift tools 6.0)
     DEVELOPMENT_LANGUAGE: en
     # DEVELOPMENT_TEAM is intentionally unset: Xcode Cloud injects the team from

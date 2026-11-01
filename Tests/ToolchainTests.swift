@@ -37,6 +37,6 @@ struct ToolchainTests {
     @Test("Report covers every companion the Ecosystem tab shows")
     func reportCoverage() {
         let names = Set(Toolchain.report().map { $0.name })
-        #expect(names == ["entheai", "ayeosd", "hf-mount", "python3", "accelerate"])
+        #expect(names == ["entheai", "dsh", "ayeosd", "hf-mount", "python3", "accelerate"])
     }
 }

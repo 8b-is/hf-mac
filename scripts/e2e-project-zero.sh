@@ -19,6 +19,20 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Portable readiness probe: python3 is already required, so avoid lsof.
+port_open() {
+  python3 - "$PORT" <<'PY'
+import socket, sys
+s = socket.socket(); s.settimeout(1)
+try:
+    s.connect(("127.0.0.1", int(sys.argv[1])))
+except OSError:
+    sys.exit(1)
+finally:
+    s.close()
+PY
+}
+
 PZ_DIR="${PZ_DIR:-$HOME/project-zero}"
 MODEL_DIR="${MODEL_DIR:-$HOME/models}"
 PORT="${PZ_PORT:-8090}"
@@ -51,7 +65,7 @@ ENGINE_PID=$!
 trap 'kill "$ENGINE_PID" 2>/dev/null || true' EXIT
 
 for _ in $(seq 1 60); do
-  if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then break; fi
+  if port_open; then break; fi
   if ! kill -0 "$ENGINE_PID" 2>/dev/null; then
     echo "!! engine exited during load — last log lines:" >&2
     tail -5 /tmp/pz-e2e.log >&2
@@ -59,7 +73,7 @@ for _ in $(seq 1 60); do
   fi
   sleep 1
 done
-lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1 || { echo "!! :$PORT never came up" >&2; exit 1; }
+port_open || { echo "!! :$PORT never came up" >&2; exit 1; }
 
 echo "== 4/4 probe hf.app's client surface"
 python3 - "$PORT" <<'PY'

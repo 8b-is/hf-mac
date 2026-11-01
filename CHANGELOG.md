@@ -4,6 +4,18 @@ All notable changes to HF-MAC{-1,0,+1}.
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-11-01
+
+### Changed
+- **Version 0.15.0** — `project.yml`, `Packaging/Info.plist`, and the landing page; build number `2`.
+- **Landing page evolution** — the deepsiper-enthea card now names the `llm-osaurus` provider seam (typo fixed) and the harness lanes it carries: voice (`say`/`kokoro`), GAIA ternary quantization, and the Smart Tree MCP overlay.
+- **Portable e2e readiness** — `scripts/e2e-project-zero.sh` probes the engine with a `python3` socket instead of `lsof`, so it runs on a minimal UNIX host.
+
+### Added
+- **`dsh` companion probe** — the Ecosystem tab and `HFMac --check-tools` now report the deepsiper-enthea CLI alongside entheai and the other companions.
+
+## [0.14.0] — 2026-11-01
+
 ### Fixed
 - **ModelSpeed duplicate** — `gptq` appeared twice in the quant classifier.
 - **Chat message duplicate** — `send()` appended the user message twice to the
